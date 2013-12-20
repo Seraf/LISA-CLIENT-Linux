@@ -1,9 +1,0 @@
-#JSGF V1.0;  
-
-grammar botname;  
-
-public <command> = (<keyword> | <garbage>+)+;
-
-<keyword> = (LISA);
-
-<garbage> = GARBAGE;

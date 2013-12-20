@@ -6,5 +6,8 @@
     "debug": {
         "debug_input": true,
         "debug_output": true
-    }
+    },
+    "zone": "zone1",
+    "tts": "pico-generic",
+    "lang": "fr"
 }
