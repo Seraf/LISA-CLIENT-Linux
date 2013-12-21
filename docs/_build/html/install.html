@@ -1,0 +1,212 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Install &mdash; L.I.S.A Linux Client 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="top" title="L.I.S.A Linux Client 0.1 documentation" href="index.html" />
+    <link rel="next" title="Configuration" href="configuration.html" />
+    <link rel="prev" title="About" href="about.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="configuration.html" title="Configuration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="about.html" title="About"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">L.I.S.A Linux Client 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="install">
+<span id="id1"></span><h1>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="lisa-client">
+<h2>LISA Client<a class="headerlink" href="#lisa-client" title="Permalink to this headline">¶</a></h2>
+<p>First, install the LISA application :</p>
+<div class="highlight-python"><pre>git clone https://github.com/Seraf/LISA-CLIENT-Linux.git</pre>
+</div>
+<p>or if you don&#8217;t have git (update will be easier with git):</p>
+<div class="highlight-python"><pre>curl -L https://github.com/Seraf/LISA-CLIENT-Linux/tarball/master | tar xz</pre>
+</div>
+<p>You now have to install some things to make it working :</p>
+<div class="highlight-python"><pre>sudo apt-get install python-dev python-openssl python-setuptools</pre>
+</div>
+<p>If you don&#8217;t have &#8220;pip&#8221; to install python packages, I recommend it ! :</p>
+<div class="highlight-python"><pre>sudo easy_install pip</pre>
+</div>
+<p>Then, install the python dependencies for LISA :</p>
+<div class="highlight-python"><pre>sudo pip install twisted</pre>
+</div>
+</div>
+<div class="section" id="speech-dispatcher">
+<h2>Speech Dispatcher<a class="headerlink" href="#speech-dispatcher" title="Permalink to this headline">¶</a></h2>
+<p>LISA Linux Client rely on Speech Dispatcher software. You will be able to add new tts engine in Speech Dispatcher as module. You won&#8217;t have to add new code on LISA, just tell in the config file the module you want to use.</p>
+<p>The install of Speech Dispatcher is easy :</p>
+<div class="highlight-python"><pre>sudo apt-get install speech-dispatcher python-speechd</pre>
+</div>
+<p>Be carefull, on latest packages (depending your distro), python-speechd is for python3. You need to find the python 2.7 version (maybe on old packages) or install it from sources.
+The Linux client actually use python 2.7, I&#8217;m stuck to this version because of Twisted. Twisted is currently migrating to python 3, and when it will be done, it will play fine.</p>
+<p>Now you have to &#8220;configure&#8221; new modules. If you want to use the pico libtts (best free engine on Linux) you have to edit /etc/speech-dispatcher/speechd.conf to uncomment the line :</p>
+<div class="highlight-python"><pre>AddModule "pico-generic" "sd_generic"     "pico-generic.conf"</pre>
+</div>
+</div>
+<div class="section" id="raspberry">
+<h2>Raspberry<a class="headerlink" href="#raspberry" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="pico-libtts">
+<h3>Pico libtts<a class="headerlink" href="#pico-libtts" title="Permalink to this headline">¶</a></h3>
+<p>On raspberry pi, there is no libttspico build. You can install it with the package I have compiled on a Raspbian Wheezy :</p>
+<div class="highlight-python"><pre>sudo dpkg -i package/libttspico0_1.0+git20110131-2_armhf.deb package/libttspico-data_1.0+git20110131-2_all.deb package/libttspico-dev_1.0+git20110131-2_armhf.deb package/libttspico-utils_1.0+git20110131-2_armhf.deb</pre>
+</div>
+</div>
+<div class="section" id="pulseaudio">
+<h3>PulseAudio<a class="headerlink" href="#pulseaudio" title="Permalink to this headline">¶</a></h3>
+<p>Raspberry is funny but when you have to play with audio configuration (and generally on all Linux), it quickly become a nightmare. Here is what I have done to make it working :
+First, install Pulseaudio :</p>
+<div class="highlight-python"><pre>sudo apt-get install gstreamer0.10-pulseaudio libao4 libasound2-plugins libgconfmm-2.6-1c2 libglademm-2.4-1c2a libpulse-dev libpulse-mainloop-glib0 libpulse-mainloop-glib0-dbg libpulse0 libpulse0-dbg libsox-fmt-pulse paman paprefs pavucontrol pavumeter pulseaudio pulseaudio-dbg pulseaudio-esound-compat pulseaudio-esound-compat-dbg pulseaudio-module-bluetooth pulseaudio-module-gconf pulseaudio-module-jack pulseaudio-module-lirc pulseaudio-module-lirc-dbg pulseaudio-module-x11 pulseaudio-module-zeroconf pulseaudio-module-zeroconf-dbg pulseaudio-utils oss-compat -y</pre>
+</div>
+<p>Setup ALSA :</p>
+<div class="highlight-python"><pre>sudo cp -pf /etc/asound.conf /etc/asound.conf.ORIG
+sudo echo 'pcm.pulse {
+    type pulse
+}
+
+ctl.pulse {
+    type pulse
+}
+
+pcm.!default {
+    type pulse
+}
+
+ctl.!default {
+    type pulse
+}' &gt; /etc/asound.conf</pre>
+</div>
+<p>Change default sound driver from alsa to pulseaudio :</p>
+<div class="highlight-python"><pre>sudo cp -fvp /etc/libao.conf /etc/libao.conf.ORIG
+sudo sed -i "s,default_driver=alsa,default_driver=pulse,g" /etc/libao.conf
+
+sudo cp -fvp /etc/pulse/daemon.conf /etc/pulse/daemon.conf.ORIG
+
+sudo echo "
+high-priority = yes
+nice-level = 5
+exit-idle-time = -1
+resample-method = src-sinc-medium-quality
+default-sample-format = s16le
+default-sample-rate = 48000
+default-sample-channels = 2" &gt;&gt; /etc/pulse/daemon.conf</pre>
+</div>
+<p>Add pi user to the pulse access group :</p>
+<div class="highlight-python"><pre>sudo adduser pi pulse-access</pre>
+</div>
+<p>Don&#8217;t forget to reboot to apply all these modifications :</p>
+<div class="highlight-python"><pre>sudo shutdown -r now</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Install</a><ul>
+<li><a class="reference internal" href="#lisa-client">LISA Client</a></li>
+<li><a class="reference internal" href="#speech-dispatcher">Speech Dispatcher</a></li>
+<li><a class="reference internal" href="#raspberry">Raspberry</a><ul>
+<li><a class="reference internal" href="#pico-libtts">Pico libtts</a></li>
+<li><a class="reference internal" href="#pulseaudio">PulseAudio</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="about.html"
+                        title="previous chapter">About</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="configuration.html"
+                        title="next chapter">Configuration</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/install.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="configuration.html" title="Configuration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="about.html" title="About"
+             >previous</a> |</li>
+        <li><a href="index.html">L.I.S.A Linux Client 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Julien Syx.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
