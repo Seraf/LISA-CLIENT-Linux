@@ -6,6 +6,7 @@ from twisted.python import log
 import json, os
 from OpenSSL import SSL
 import speechd
+import platform
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
@@ -22,22 +23,27 @@ class LisaClient(LineReceiver):
 
     def sendMessage(self, message, type='chat'):
         if configuration['debug']['debug_output']:
-            log.msg('"from": "Linux","type": type, "body": ' + unicode(message) + ', "zone": '+ configuration['zone'])
+            log.msg('OUTPUT: "from": ' + unicode(platform.node()) + ',"type": ' + type + ', "body": ' + unicode(message) +
+                    ', "zone": ' + configuration['zone']
+            )
         self.sendLine(json.dumps(
-            {"from": 'Linux',"type": type, "body": unicode(message), "zone": configuration['zone']})
+            {"from": unicode(platform.node()), "type": type, "body": unicode(message), "zone": configuration['zone']})
         )
+
     def lineReceived(self, data):
         datajson = json.loads(data)
         if configuration['debug']['debug_input']:
-            log.msg("Data received :" + unicode(datajson))
-        client.speak(unicode(datajson['body']))
+            log.msg("INPUT: " + unicode(datajson))
+        if datajson['type'] == 'chat':
+            client.speak(unicode(datajson['body']))
 
     def connectionMade(self):
         log.msg('Connected to Lisa.')
         if configuration['enable_secure_mode']:
             ctx = ClientTLSContext()
             self.transport.startTLS(ctx, self.factory)
-        self.sendMessage('Client connected from ' + configuration['zone'], 'command')
+        self.sendMessage(message='LOGIN', type='command')
+
 
 class LisaClientFactory(ReconnectingClientFactory):
     def startedConnecting(self, connector):
@@ -52,6 +58,7 @@ class LisaClientFactory(ReconnectingClientFactory):
     def clientConnectionLost(self, connector, reason):
         log.err('Lost connection.  Reason:', reason)
         client.close()
+        log.msg("DOING A CLIENT CLOSE")
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
