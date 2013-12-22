@@ -29,8 +29,8 @@ class LisaClient(LineReceiver):
     def lineReceived(self, data):
         datajson = json.loads(data)
         if configuration['debug']['debug_input']:
-            log.msg("Data received :" + str(datajson))
-        client.speak(str(datajson['body']))
+            log.msg("Data received :" + unicode(datajson))
+        client.speak(unicode(datajson['body']))
 
     def connectionMade(self):
         log.msg('Connected to Lisa.')
