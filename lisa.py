@@ -20,6 +20,7 @@ client.set_language(str(configuration['lang']))
 class LisaClient(LineReceiver):
     def __init__(self,factory):
         self.factory = factory
+        self.bot_name = "lisa"
 
     def sendMessage(self, message, type='chat'):
         if configuration['debug']['debug_output']:
@@ -36,6 +37,10 @@ class LisaClient(LineReceiver):
             log.msg("INPUT: " + unicode(datajson))
         if datajson['type'] == 'chat':
             client.speak(unicode(datajson['body']))
+        elif datajson['type'] == 'command':
+            if datajson['command'] == 'LOGIN':
+                self.bot_name = unicode(datajson['bot_name'])
+                client.speak(unicode(datajson['body']))
 
     def connectionMade(self):
         log.msg('Connected to Lisa.')
