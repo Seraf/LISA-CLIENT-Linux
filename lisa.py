@@ -1,21 +1,36 @@
-from twisted.internet import ssl, reactor
-from twisted.internet.protocol import Protocol, ReconnectingClientFactory
+from twisted.internet import ssl
+from twisted.internet.protocol import ReconnectingClientFactory
+from twisted.internet.defer import inlineCallbacks, DeferredQueue
 from twisted.protocols.basic import LineReceiver
 from twisted.application import internet, service
 from twisted.python import log
+import subprocess
 import json, os
 from OpenSSL import SSL
-import speechd
 import platform
+from twisted.application.internet import TimerService
+
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
 configuration = json.load(open(os.path.normpath(dir_path + '/' + 'configuration/lisa.json')))
+sound_queue = DeferredQueue()
 
-client = speechd.client.SSIPClient('LISA')
-client.set_punctuation(speechd.PunctuationMode.SOME)
-client.set_output_module(str(configuration['tts']))
-client.set_language(str(configuration['lang']))
+
+
+@inlineCallbacks
+def SoundWorker():
+    data = yield sound_queue.get()
+    soundfile = os.path.normpath(dir_path + '/tmp/output.wav')
+
+    command_create = ['pico2wave', '-w', soundfile,
+               '-l', configuration['lang'], '"'+ data.encode('UTF-8') + '"']
+    create_sound = subprocess.call(command_create)
+
+    command_play = ['aplay', soundfile]
+    play_sound = subprocess.call(command_play)
+
+    os.remove(soundfile)
 
 class LisaClient(LineReceiver):
     def __init__(self,factory):
@@ -36,11 +51,11 @@ class LisaClient(LineReceiver):
         if configuration['debug']['debug_input']:
             log.msg("INPUT: " + unicode(datajson))
         if datajson['type'] == 'chat':
-            client.speak(unicode(datajson['body']))
+            sound_queue.put(datajson['body'])
         elif datajson['type'] == 'command':
             if datajson['command'] == 'LOGIN':
                 self.bot_name = unicode(datajson['bot_name'])
-                client.speak(unicode(datajson['body']))
+                sound_queue.put(datajson['body'])
 
     def connectionMade(self):
         log.msg('Connected to Lisa.')
@@ -48,7 +63,6 @@ class LisaClient(LineReceiver):
             ctx = ClientTLSContext()
             self.transport.startTLS(ctx, self.factory)
         self.sendMessage(message='LOGIN', type='command')
-
 
 class LisaClientFactory(ReconnectingClientFactory):
     def startedConnecting(self, connector):
@@ -62,8 +76,6 @@ class LisaClientFactory(ReconnectingClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         log.err('Lost connection.  Reason:', reason)
-        client.close()
-        log.msg("DOING A CLIENT CLOSE")
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
@@ -84,10 +96,19 @@ class CtxFactory(ssl.ClientContextFactory):
 
         return ctx
 
-LisaFactory = LisaClientFactory()
+# Creating MultiService
 application = service.Application("LISA-Client")
+multi = service.MultiService()
+multi.setServiceParent(application)
+
+sound_service = TimerService(0.01, SoundWorker)
+sound_service.setServiceParent(multi)
+
+LisaFactory = LisaClientFactory()
+
 if configuration['enable_secure_mode']:
     lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port_ssl'], LisaFactory, CtxFactory())
 else:
     lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port'], LisaFactory)
-lisaclientService.setServiceParent(application)
+
+lisaclientService.setServiceParent(multi)

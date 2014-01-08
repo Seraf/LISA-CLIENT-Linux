@@ -7,7 +7,7 @@
         "debug_input": true,
         "debug_output": true
     },
-    "zone": "zone1",
-    "tts": "pico-generic",
-    "lang": "fr"
+    "zone": "zone2",
+    "tts": "pico",
+    "lang": "fr-FR"
 }
