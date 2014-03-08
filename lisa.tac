@@ -10,13 +10,64 @@ from OpenSSL import SSL
 import platform
 from twisted.application.internet import TimerService
 
+import gobject
+import pygst
+pygst.require('0.10')
+gobject.threads_init()
+import gst
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
 configuration = json.load(open(os.path.normpath(dir_path + '/' + 'configuration/lisa.json')))
 sound_queue = DeferredQueue()
 
+class keyword_spotting(object):
+    def __init__(self, LisaFactory):
+        """Initialize the speech components"""
+        self.LisaFactory = LisaFactory
+        self.pipeline = gst.parse_launch('gconfaudiosrc ! audioconvert ! audioresample '
+                                         + '! vader name=vad auto-threshold=true '
+                                         + '! pocketsphinx name=asr '
+                                         + '! appsink sync=false ')
+        asr = self.pipeline.get_by_name('asr')
+        asr.connect('partial_result', self.asr_partial_result)
+        asr.connect('result', self.asr_result)
+        asr.set_property('lm', 'lisa.lm')
+        asr.set_property('dict', 'lisa.dic')
+        asr.set_property('configured', True)
 
+
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect('message::application', self.application_message)
+
+        self.pipeline.set_state(gst.STATE_PLAYING)
+
+    def asr_partial_result(self, asr, text, uttid):
+        """Forward partial result signals on the bus to the main thread."""
+        struct = gst.Structure('partial_result')
+        struct.set_value('hyp', text)
+        struct.set_value('uttid', uttid)
+        asr.post_message(gst.message_new_application(asr, struct))
+
+    def asr_result(self, asr, text, uttid):
+        """Forward result signals on the bus to the main thread."""
+        struct = gst.Structure('result')
+        print "========================================"
+        print text
+        print "========================================"
+        struct.set_value('hyp', text)
+        struct.set_value('uttid', uttid)
+        asr.post_message(gst.message_new_application(asr, struct))
+
+    def application_message(self, bus, msg):
+        """Receive application messages from the bus."""
+        msgtype = msg.structure.get_name()
+        self.display_result(msg.structure['hyp'], msg.structure['uttid'])
+        self.pipeline.set_state(gst.STATE_PAUSED)
+
+    def display_result(self, hyp, uttid):
+        print hyp
 
 @inlineCallbacks
 def SoundWorker():
@@ -112,3 +163,4 @@ else:
     lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port'], LisaFactory)
 
 lisaclientService.setServiceParent(multi)
+keyword_spotting(LisaFactory)
