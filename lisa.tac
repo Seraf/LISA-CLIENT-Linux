@@ -33,14 +33,14 @@ sound_queue = DeferredQueue()
 botname = ""
 
 class keyword_spotting(object):
-    def __init__(self, LisaFactory):
+    def __init__(self, LisaClient):
+        """Initialize the speech components"""
 
         self.recognizer = recognizer()
         self.recognizer.connect('finished',self.recognizer_finished)
 
-        """Initialize the speech components"""
-        self.LisaFactory = LisaFactory
-        self.pipeline = gst.parse_launch('gconfaudiosrc ! audioconvert ! audioresample '
+        self.lisaclient = LisaClient
+        self.pipeline = gst.parse_launch('autoaudiosrc ! audioconvert ! audioresample '
                                          + '! vader name=vad auto-threshold=true '
                                          + '! pocketsphinx name=asr '
                                          + '! appsink sync=false ')
@@ -75,19 +75,20 @@ class keyword_spotting(object):
     def application_message(self, bus, msg):
         """Receive application messages from the bus."""
         msgtype = msg.structure.get_name()
-        self.display_result(msg.structure['hyp'], msg.structure['uttid'])
+        self.process_result(msg.structure['hyp'], msg.structure['uttid'])
         self.pipeline.set_state(gst.STATE_PAUSED)
 
     def recognizer_finished(self, text):
-        self.LisaFactory.protocol.sendMessage(message=text)
+        log.msg("send message")
+        self.lisaclient.sendMessage(message=text)
 
-    def display_result(self, hyp, uttid):
+    def process_result(self, hyp, uttid):
         global botname
         if hyp.lower() == botname.lower():
             log.msg("======================")
             log.msg("%s keyword detected" % botname)
             self.pipeline.set_state(gst.STATE_PAUSED)
-            recognizer().record()
+            recognizer()
             self.pipeline.set_state(gst.STATE_PLAYING)
 
 class recognizer(gobject.GObject):
@@ -98,27 +99,62 @@ class recognizer(gobject.GObject):
         gobject.GObject.__init__(self)
         # file where we record our voice (removed at end)
         self.flacfile='tmp/google.flac'
-        self.pipeline = gst.parse_launch('gconfaudiosrc ! audioconvert ! audioresample '
+        self.pipeline = gst.parse_launch('autoaudiosrc ! audioconvert ! audioresample '
                                          + '! vader name=vad auto-threshold=true '
                                          + '! audio/x-raw-int,rate=16000'
                                          + '! flacenc ! filesink location=%s' % self.flacfile)
 
-    def record(self):
-        # pause pipeline to not break our file
+
+        vader = self.pipeline.get_by_name('vad')
+        vader.connect('vader-start', self.on_vader_start)
+        vader.connect('vader-stop', self.on_vader_stop)
+
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect('message::application', self.application_message)
+
+        self.pipeline.set_state(gst.STATE_PLAYING)
+
+    def application_message(self, bus, msg):
+        """Receive application messages from the bus."""
+        msgtype = msg.structure.get_name()
+        self.process_result(msg.structure['hyp'], msg.structure['uttid'])
         self.pipeline.set_state(gst.STATE_PAUSED)
 
+    def process_result(self, hyp, uttid):
         # get content of the file
         flacfile = open(self.flacfile, 'r').read()
 
         # hey, Google ! what did I said ?
-        req = urllib2.Request('https://www.google.com/speech-api/v1/'
+        try:
+            req = urllib2.Request('https://www.google.com/speech-api/v1/'
                               'recognize?client=chromium&lang=fr-FR&maxresults=1',
                               flacfile, {'Content-Type': 'audio/x-flac; rate=16000'})
-        res = urllib2.urlopen(req)
-        resp = res.read()
-        resp = json.loads(resp)
-        print resp['hypotheses'][0]['utterance']
-        self.emit("finished", resp['hypotheses'][0]['utterance'])
+            res = urllib2.urlopen(req)
+            resp = res.read()
+            resp = json.loads(resp)
+            print resp['hypotheses'][0]['utterance']
+        except:
+            pass #self.pipeline.set_state(gst.STATE_NULL)
+
+    def cancel(self):
+        print " * Not a word in the past 10 seconds, cancelling"
+        self.pipeline.set_state(gst.STATE_NULL)
+
+    def on_vader_start(self, ob, message):
+        """ Just to be sure that vader has reconnized that you're speaking
+        we set a trace """
+        log.msg("Listening...")
+        gobject.timeout_add_seconds(10, self.cancel)
+
+    def on_vader_stop(self, ob, message):
+        """ This function is launched when vader stopped to listen
+        That happend when you stop to talk """
+
+        log.msg("Processing...")
+        # pause pipeline to not break our file
+        self.pipeline.set_state(gst.STATE_PAUSED)
+
 
 @inlineCallbacks
 def SoundWorker():
@@ -171,6 +207,15 @@ class LisaClient(LineReceiver):
             self.transport.startTLS(ctx, self.factory)
         self.sendMessage(message='LOGIN', type='command')
 
+        #init gobject threads
+        gobject.threads_init()
+        #we want a main loop
+        main_loop = gobject.MainLoop()
+        #handle sigint
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        keyword_spotting(self)
+
+
 class LisaClientFactory(ReconnectingClientFactory):
     def startedConnecting(self, connector):
         log.msg('Started to connect.')
@@ -219,18 +264,3 @@ else:
     lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port'], LisaFactory)
 
 lisaclientService.setServiceParent(multi)
-#init gobject threads
-gobject.threads_init()
-#we want a main loop
-main_loop = gobject.MainLoop()
-#handle sigint
-signal.signal(signal.SIGINT, signal.SIG_DFL)
-#run the blather
-keyword_spotting(LisaFactory)
-#start the main loop
-#try:
-#    main_loop.run()
-#except:
-#    print "time to quit"
-#    main_loop.quit()
-#    sys.exit()
