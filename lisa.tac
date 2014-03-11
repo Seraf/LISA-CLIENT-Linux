@@ -7,7 +7,7 @@ import gobject
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
 
-from twisted.internet import ssl
+from twisted.internet import ssl, utils
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet.defer import inlineCallbacks, DeferredQueue
 from twisted.protocols.basic import LineReceiver
@@ -27,6 +27,7 @@ import gst
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
+soundfile = os.path.normpath(dir_path + '/tmp/output.wav')
 configuration = json.load(open(os.path.normpath(dir_path + '/' + 'configuration/lisa.json')))
 sound_queue = DeferredQueue()
 
@@ -35,11 +36,8 @@ botname = ""
 class keyword_spotting(object):
     def __init__(self, LisaClient):
         """Initialize the speech components"""
-
-        self.recognizer = recognizer()
-        self.recognizer.connect('finished',self.recognizer_finished)
-
         self.lisaclient = LisaClient
+        self.recognizer = recognizer(self)
         self.pipeline = gst.parse_launch('autoaudiosrc ! audioconvert ! audioresample '
                                          + '! vader name=vad auto-threshold=true '
                                          + '! pocketsphinx name=asr '
@@ -78,26 +76,22 @@ class keyword_spotting(object):
         self.process_result(msg.structure['hyp'], msg.structure['uttid'])
         self.pipeline.set_state(gst.STATE_PAUSED)
 
-    def recognizer_finished(self, text):
-        log.msg("send message")
-        self.lisaclient.sendMessage(message=text)
-
     def process_result(self, hyp, uttid):
         global botname
         if hyp.lower() == botname.lower():
             log.msg("======================")
             log.msg("%s keyword detected" % botname)
             self.pipeline.set_state(gst.STATE_PAUSED)
-            recognizer()
-            self.pipeline.set_state(gst.STATE_PLAYING)
+            self.recognizer.pipeline.set_state(gst.STATE_PLAYING)
 
 class recognizer(gobject.GObject):
     __gsignals__ = {
 		'finished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING,))
 	}
-    def __init__(self):
+    def __init__(self, ks):
         gobject.GObject.__init__(self)
         # file where we record our voice (removed at end)
+        self.ks = ks
         self.flacfile='tmp/google.flac'
         self.pipeline = gst.parse_launch('autoaudiosrc ! audioconvert ! audioresample '
                                          + '! vader name=vad auto-threshold=true '
@@ -112,8 +106,6 @@ class recognizer(gobject.GObject):
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
         bus.connect('message::application', self.application_message)
-
-        self.pipeline.set_state(gst.STATE_PLAYING)
 
     def application_message(self, bus, msg):
         """Receive application messages from the bus."""
@@ -133,9 +125,12 @@ class recognizer(gobject.GObject):
             res = urllib2.urlopen(req)
             resp = res.read()
             resp = json.loads(resp)
-            print resp['hypotheses'][0]['utterance']
+            text = resp['hypotheses'][0]['utterance']
+            print text
+            self.ks.lisaclient.sendMessage(message=text)
         except:
             pass #self.pipeline.set_state(gst.STATE_NULL)
+        self.ks.set_state(gst.STATE_PLAYING)
 
     def cancel(self):
         print " * Not a word in the past 10 seconds, cancelling"
@@ -159,15 +154,11 @@ class recognizer(gobject.GObject):
 @inlineCallbacks
 def SoundWorker():
     data = yield sound_queue.get()
-    soundfile = os.path.normpath(dir_path + '/tmp/output.wav')
-
-    command_create = ['pico2wave', '-w', soundfile,
-               '-l', configuration['lang'], '"'+ data.encode('UTF-8') + '"']
-    create_sound = subprocess.call(command_create)
-
-    command_play = ['aplay', soundfile]
-    play_sound = subprocess.call(command_play)
-
+    command_create = ('-w', soundfile,
+               '-l', configuration['lang'], '"'+ data.encode('UTF-8') + '"')
+    create_sound = yield utils.getProcessOutputAndValue('/usr/bin/pico2wave', path='/usr/bin', args=command_create)
+    command_play = ( '-P', soundfile )
+    play_sound = yield utils.getProcessOutputAndValue('/usr/bin/aplay', path='/usr/bin', args=command_play)
     os.remove(soundfile)
 
 class LisaClient(LineReceiver):
