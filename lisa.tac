@@ -19,11 +19,14 @@ from OpenSSL import SSL
 import platform
 from twisted.application.internet import TimerService
 
+import tempfile
 import urllib2
 import pygst
 pygst.require('0.10')
 gobject.threads_init()
 import gst
+
+from lib import Listener
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
@@ -32,123 +35,6 @@ configuration = json.load(open(os.path.normpath(dir_path + '/' + 'configuration/
 sound_queue = DeferredQueue()
 
 botname = ""
-
-class keyword_spotting(object):
-    def __init__(self, LisaClient):
-        """Initialize the speech components"""
-        self.lisaclient = LisaClient
-        self.recognizer = recognizer(self)
-        self.pipeline = gst.parse_launch('autoaudiosrc ! audioconvert ! audioresample '
-                                         + '! vader name=vad auto-threshold=true '
-                                         + '! pocketsphinx name=asr '
-                                         + '! appsink sync=false ')
-        asr = self.pipeline.get_by_name('asr')
-        asr.connect('partial_result', self.asr_partial_result)
-        asr.connect('result', self.asr_result)
-        asr.set_property('lm', 'lisa.lm')
-        asr.set_property('dict', 'lisa.dic')
-        asr.set_property('configured', True)
-
-
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect('message::application', self.application_message)
-
-        self.pipeline.set_state(gst.STATE_PLAYING)
-
-    def asr_partial_result(self, asr, text, uttid):
-        """Forward partial result signals on the bus to the main thread."""
-        struct = gst.Structure('partial_result')
-        struct.set_value('hyp', text)
-        struct.set_value('uttid', uttid)
-        asr.post_message(gst.message_new_application(asr, struct))
-
-    def asr_result(self, asr, text, uttid):
-        """Forward result signals on the bus to the main thread."""
-        struct = gst.Structure('result')
-        struct.set_value('hyp', text)
-        struct.set_value('uttid', uttid)
-        asr.post_message(gst.message_new_application(asr, struct))
-
-    def application_message(self, bus, msg):
-        """Receive application messages from the bus."""
-        msgtype = msg.structure.get_name()
-        self.process_result(msg.structure['hyp'], msg.structure['uttid'])
-        self.pipeline.set_state(gst.STATE_PAUSED)
-
-    def process_result(self, hyp, uttid):
-        global botname
-        if hyp.lower() == botname.lower():
-            log.msg("======================")
-            log.msg("%s keyword detected" % botname)
-            self.pipeline.set_state(gst.STATE_PAUSED)
-            self.recognizer.pipeline.set_state(gst.STATE_PLAYING)
-
-class recognizer(gobject.GObject):
-    __gsignals__ = {
-		'finished' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING,))
-	}
-    def __init__(self, ks):
-        gobject.GObject.__init__(self)
-        # file where we record our voice (removed at end)
-        self.ks = ks
-        self.flacfile='tmp/google.flac'
-        self.pipeline = gst.parse_launch('autoaudiosrc ! audioconvert ! audioresample '
-                                         + '! vader name=vad auto-threshold=true '
-                                         + '! audio/x-raw-int,rate=16000'
-                                         + '! flacenc ! filesink location=%s' % self.flacfile)
-
-
-        vader = self.pipeline.get_by_name('vad')
-        vader.connect('vader-start', self.on_vader_start)
-        vader.connect('vader-stop', self.on_vader_stop)
-
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect('message::application', self.application_message)
-
-    def application_message(self, bus, msg):
-        """Receive application messages from the bus."""
-        msgtype = msg.structure.get_name()
-        self.process_result(msg.structure['hyp'], msg.structure['uttid'])
-        self.pipeline.set_state(gst.STATE_PAUSED)
-
-    def process_result(self, hyp, uttid):
-        # get content of the file
-        flacfile = open(self.flacfile, 'r').read()
-
-        # hey, Google ! what did I said ?
-        try:
-            req = urllib2.Request('https://www.google.com/speech-api/v1/'
-                              'recognize?client=chromium&lang=fr-FR&maxresults=1',
-                              flacfile, {'Content-Type': 'audio/x-flac; rate=16000'})
-            res = urllib2.urlopen(req)
-            resp = res.read()
-            resp = json.loads(resp)
-            text = resp['hypotheses'][0]['utterance']
-            print text
-            self.ks.lisaclient.sendMessage(message=text)
-        except:
-            pass #self.pipeline.set_state(gst.STATE_NULL)
-        self.ks.set_state(gst.STATE_PLAYING)
-
-    def cancel(self):
-        print " * Not a word in the past 10 seconds, cancelling"
-        self.pipeline.set_state(gst.STATE_NULL)
-
-    def on_vader_start(self, ob, message):
-        """ Just to be sure that vader has reconnized that you're speaking
-        we set a trace """
-        log.msg("Listening...")
-        gobject.timeout_add_seconds(10, self.cancel)
-
-    def on_vader_stop(self, ob, message):
-        """ This function is launched when vader stopped to listen
-        That happend when you stop to talk """
-
-        log.msg("Processing...")
-        # pause pipeline to not break our file
-        self.pipeline.set_state(gst.STATE_PAUSED)
 
 
 @inlineCallbacks
@@ -188,6 +74,7 @@ class LisaClient(LineReceiver):
                 self.bot_name = unicode(datajson['bot_name'])
                 global botname
                 botname = unicode(datajson['bot_name'])
+                Listener(lisaclient=self, botname=botname)
                 print "setting botname to %s" % self.bot_name
                 sound_queue.put(datajson['body'])
 
@@ -204,7 +91,6 @@ class LisaClient(LineReceiver):
         main_loop = gobject.MainLoop()
         #handle sigint
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-        keyword_spotting(self)
 
 
 class LisaClientFactory(ReconnectingClientFactory):
