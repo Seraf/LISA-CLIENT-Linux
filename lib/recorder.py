@@ -52,15 +52,15 @@ class Recorder:
 
         print "HEADS UP THIS IS WHAT I'M GOING TO BE RUNNING:"
 
-        print "ffmpeg -i %s -y %s > /dev/null 2>&1" % (self.recording, self.recording)
+        print "avconv -i %s -y %s > /dev/null 2>&1" % (self.recording, self.recording)
         #print "sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD)
         print "flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav > /dev/null 2>&1"  % (self.recording, self.recording)
 
         print " * Converting to FLAC..."
-        os.system("ffmpeg -i %s -y %s.final.wav > /dev/null 2>&1" % (self.recording, self.recording))
+        os.system("avconv -i %s -y %s.final.wav > /dev/null 2>&1" % (self.recording, self.recording))
         #os.system("sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD))
         os.system("flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav > /dev/null 2>&1"  % (self.recording, self.recording))
-        os.unlink(self.recording + ".final.wav")
+        #os.unlink(self.recording + ".final.wav")
         print " * Done."
         self.listener.answer(self.recording + '.flac')
 

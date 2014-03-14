@@ -21,7 +21,7 @@ class Listener:
         self.lisaclient = lisaclient
         self.failed = 0
         self.keyword_identified = 0
-        self.recording = tempfile.mktemp(suffix='google.wav', dir='../tmp')
+        self.recording = tempfile.mktemp(suffix='google.wav', dir='%s/../tmp' % dir_path)
 
         self.pipeline = gst.Pipeline("mypipeline")
 
@@ -167,9 +167,9 @@ class Listener:
         Recorder(self,self.vader)
         self.recording_valve.set_property('drop',True)
 
-    def cancel_listening(self,valve):
+    def cancel_listening(self):
         player.play('pi-cancel')
-        valve.set_property('drop',False)
+        self.recording_valve.set_property('drop',False)
         self.pipeline.set_state(gst.STATE_PLAYING)
 
     # question - sound recording
