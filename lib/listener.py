@@ -17,11 +17,13 @@ class Listener:
     def __init__(self, lisaclient, botname):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
+        self.recording_state = False
         self.botname = botname
         self.lisaclient = lisaclient
         self.failed = 0
         self.keyword_identified = 0
         self.recording = tempfile.mktemp(suffix='google.wav', dir='%s/../tmp' % dir_path)
+        self.recorder = None
 
         self.pipeline = gst.Pipeline("mypipeline")
 
@@ -151,30 +153,30 @@ class Listener:
         """Forward partial result signals on the bus to the main thread."""
 
     def result(self, hyp, uttid):
-        if hyp.lower() == self.botname.lower():
+        if hyp.lower() == self.botname.lower() and not self.recording_state:
             log.msg("======================")
             log.msg("%s keyword detected" % self.botname)
             self.failed = 0
             self.keyword_identified = 1
+            log.msg("should play listening")
             player.play('pi-listening')
             self.listen()
 
     def listen(self):
         self.pipeline.set_state(gst.STATE_PAUSED)
-        player.play('pi-listening')
-        log.msg("Hello Seraf")
         self.recording_valve.set_property('drop',False)
-        Recorder(self,self.vader)
+        self.recorder = Recorder(self,self.vader)
         self.recording_valve.set_property('drop',True)
 
     def cancel_listening(self):
+        log.msg("cancel_listening : player.play('pi-cancel')")
         player.play('pi-cancel')
+        self.recording_state = False
         self.recording_valve.set_property('drop',False)
         self.pipeline.set_state(gst.STATE_PLAYING)
 
     # question - sound recording
     def answer(self, question):
-        player.play('pi-cancel')
         print " * Contacting Google"
         destf = tempfile.mktemp(suffix='piresult')
         os.system('wget --post-file %s --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7" --header="Content-Type: audio/x-flac; rate=16000" -O %s -q "https://www.google.com/speech-api/v1/recognize?client=chromium&lang=en-US"' % (question, destf))
@@ -188,9 +190,12 @@ class Listener:
 
         if len(result) == 0:
             print " * nop"
+            log.msg("cancel_listening : player.play('pi-cancel')")
             player.play('pi-cancel')
         else:
             print "intelligency here"
+
+        self.recording_state = False
         self.pipeline.set_state(gst.STATE_PLAYING)
 
     def get_pipeline(self):

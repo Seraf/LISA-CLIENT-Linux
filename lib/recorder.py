@@ -18,7 +18,6 @@ class Recorder:
         self.pipeline = self.listener.get_pipeline()
         self.recording = self.listener.get_wav_file_location()
 
-        print "Bossjones Note: Technically we're suppose to be recording to this location: " + self.recording
         vader.connect('vader_start', self.__start__)
         vader.connect('vader_stop', self.__stop__)
 
@@ -29,6 +28,7 @@ class Recorder:
         self.pipeline.set_state(gst.STATE_PLAYING)
 
         print " * Listening closely..."
+        self.listener.recording_state = True
         gobject.timeout_add_seconds(10, self.cancel)
 
     def start(self):
@@ -50,19 +50,18 @@ class Recorder:
 
         self.pipeline.set_state(gst.STATE_NULL)
 
-        print "HEADS UP THIS IS WHAT I'M GOING TO BE RUNNING:"
-
         print "avconv -i %s -y %s > /dev/null 2>&1" % (self.recording, self.recording)
         #print "sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD)
         print "flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav > /dev/null 2>&1"  % (self.recording, self.recording)
 
         print " * Converting to FLAC..."
-        os.system("avconv -i %s -y %s.final.wav > /dev/null 2>&1" % (self.recording, self.recording))
+        os.system("avconv -i %s -y %s.final.wav" % (self.recording, self.recording))
         #os.system("sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD))
-        os.system("flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav > /dev/null 2>&1"  % (self.recording, self.recording))
+        os.system("flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav"  % (self.recording, self.recording))
         #os.unlink(self.recording + ".final.wav")
         print " * Done."
         self.listener.answer(self.recording + '.flac')
+        self.pipeline.set_state(gst.STATE_NULL)
 
     def cancel(self):
         print " # cancel", self.finished, self.started
