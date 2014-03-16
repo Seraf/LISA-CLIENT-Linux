@@ -29,7 +29,8 @@ class Recorder:
 
         print " * Listening closely..."
         self.listener.recording_state = True
-        gobject.timeout_add_seconds(10, self.cancel)
+        gobject.timeout_add_seconds(5, self.cancel)
+        self.start()
 
     def start(self):
         self.started = True
@@ -50,18 +51,18 @@ class Recorder:
 
         self.pipeline.set_state(gst.STATE_NULL)
 
-        print "avconv -i %s -y %s > /dev/null 2>&1" % (self.recording, self.recording)
+        #print "avconv -i %s -y %s > /dev/null 2>&1" % (self.recording, self.recording)
         #print "sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD)
-        print "flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav > /dev/null 2>&1"  % (self.recording, self.recording)
+        #print "flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav > /dev/null 2>&1"  % (self.recording, self.recording)
 
-        print " * Converting to FLAC..."
-        os.system("avconv -i %s -y %s.final.wav" % (self.recording, self.recording))
+        #print " * Converting to FLAC..."
+        #os.system("avconv -i %s -y %s.final.wav" % (self.recording, self.recording))
         #os.system("sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD))
-        os.system("flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav"  % (self.recording, self.recording))
+        #os.system("flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav"  % (self.recording, self.recording))
         #os.unlink(self.recording + ".final.wav")
         print " * Done."
-        self.listener.answer(self.recording + '.flac')
-        self.pipeline.set_state(gst.STATE_NULL)
+        self.stop()
+        self.listener.answer()
 
     def cancel(self):
         print " # cancel", self.finished, self.started
@@ -71,7 +72,7 @@ class Recorder:
 
         if self.started == False:
             self.finished = True
-            print " * Not a word in the past 10 seconds, cancelling"
+            print " * Not a word in the past 5 seconds, cancelling"
             self.pipeline.set_state(gst.STATE_NULL)
             #self.recorder.set_state(gst.STATE_NULL)
             self.listener.cancel_listening()
