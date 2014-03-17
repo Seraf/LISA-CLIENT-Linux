@@ -20,15 +20,19 @@ class Listener:
         dir_path = os.path.dirname(path)
         configuration = json.load(open(os.path.normpath(dir_path + '/../' + 'configuration/lisa.json')))
 
-        self.wit = Wit(configuration['wit_token'])
+        #self.wit = Wit(configuration['wit_token'])
         self.recording_state = False
         self.botname = botname
         self.lisaclient = lisaclient
         self.failed = 0
         self.keyword_identified = 0
-        self.recording = tempfile.mktemp(suffix='google.wav', dir='%s/../tmp' % dir_path)
+        self.recording = '%s/../tmp/google.wav' % dir_path
         self.recorder = None
 
+        # The goal is to listen for a keyword. When I have this keyword, I open the valve and the voice is recorded
+        # to the file. Then I submit this file to google/wit, and drop again the flow to not write in the file.
+        #
+        # Current problem : file doesn't seems to be updated.
         self.pipeline = gst.parse_launch(' ! '.join(['autoaudiosrc',
                                                   'queue silent=false leaky=2 max-size-buffers=0 max-size-time=0 max-size-bytes=0',
                                                   'audioconvert',
@@ -72,7 +76,6 @@ class Listener:
             self.listen()
 
     def listen(self):
-        self.pipeline.set_state(gst.STATE_PAUSED)
         self.recording_valve.set_property('drop',False)
         self.recorder = Recorder(self,self.vader)
 
@@ -81,7 +84,6 @@ class Listener:
         player.play('pi-cancel')
         self.recording_state = False
         self.recording_valve.set_property('drop',True)
-        self.pipeline.set_state(gst.STATE_PLAYING)
 
     # question - sound recording
     def answer(self):
@@ -100,7 +102,6 @@ class Listener:
             print result
         """
         self.recording_state = False
-        self.pipeline.set_state(gst.STATE_PLAYING)
 
     def get_pipeline(self):
         return self.pipeline

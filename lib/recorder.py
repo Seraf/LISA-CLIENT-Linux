@@ -25,8 +25,6 @@ class Recorder:
         bus.add_signal_watch()
         bus.connect('message::application', self.__application_message__)
 
-        self.pipeline.set_state(gst.STATE_PLAYING)
-
         print " * Listening closely..."
         self.listener.recording_state = True
         gobject.timeout_add_seconds(5, self.cancel)
@@ -49,7 +47,7 @@ class Recorder:
         self.finished = True
         print " * Stored recording to ", self.recording
 
-        self.pipeline.set_state(gst.STATE_NULL)
+        #self.pipeline.set_state(gst.STATE_NULL)
 
         #print "avconv -i %s -y %s > /dev/null 2>&1" % (self.recording, self.recording)
         #print "sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD)
@@ -66,14 +64,14 @@ class Recorder:
 
     def cancel(self):
         print " # cancel", self.finished, self.started
-        if self.finished == True:
+        if self.finished:
             print " # cancel - noop"
             return
 
-        if self.started == False:
+        if not self.started:
             self.finished = True
             print " * Not a word in the past 5 seconds, cancelling"
-            self.pipeline.set_state(gst.STATE_NULL)
+            #self.pipeline.set_state(gst.STATE_NULL)
             #self.recorder.set_state(gst.STATE_NULL)
             self.listener.cancel_listening()
 
