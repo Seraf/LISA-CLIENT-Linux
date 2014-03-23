@@ -33,7 +33,8 @@ class Listener:
         self.lisaclient = lisaclient
         self.failed = 0
         self.keyword_identified = 0
-        self.recording = '/tmp/google.flac'
+        self.recording = '/tmp/google.wav'
+        open(self.recording, 'w').write('')
         self.recorder = None
 
         # The goal is to listen for a keyword. When I have this keyword, I open the valve and the voice is recorded
@@ -180,7 +181,7 @@ class Listener:
                                               'fakesink dump=1 t.',
                                               'valve name=valve drop=1',
                                               'queue',
-                                              'flacenc',
+                                              'wavenc',
                                               'filesink async=0 location=' + self.recording]))
 
         self.vader = self.pipeline.get_by_name('vader')
@@ -234,11 +235,10 @@ class Listener:
     def answer(self):
         self.recording_valve.set_property('drop',True)
         player.play('pi-cancel')
-        flacfile = open(self.recording, 'r').read()
-        #open(self.recording, 'w').write('')
+        wavfile = open(self.recording, 'r').read()
         print " * Contacting Google"
 
-        result = self.wit.post_speech(self.recording)
+        result = self.wit.post_speech(wavfile)
         print result
         if len(result) == 0:
             print " * nop"
@@ -246,6 +246,9 @@ class Listener:
             player.play('pi-cancel')
         else:
             print result
+            self.lisaclient.sendMessage(result['msg_body'])
+        open(self.recording, 'w').write('')
+        del self.recorder
         self.recording_state = False
 
     def get_pipeline(self):

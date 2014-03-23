@@ -37,19 +37,8 @@ class Recorder:
     def stop(self):
         print " # stop_now"
         print " * Stored recording to ", self.recording
-
-        #self.pipeline.set_state(gst.STATE_NULL)
-
-        #print "avconv -i %s -y %s > /dev/null 2>&1" % (self.recording, self.recording)
-        #print "sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD)
-        #print "flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav > /dev/null 2>&1"  % (self.recording, self.recording)
-
-        #print " * Converting to FLAC..."
-        #os.system("avconv -i %s -y %s.final.wav" % (self.recording, self.recording))
-        #os.system("sox %s %s.final.wav noisered %s/static/noise.prof 0.21 > /dev/null 2>&1" % (self.recording, self.recording, pi.PWD))
-        #os.system("flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav"  % (self.recording, self.recording))
-        #os.unlink(self.recording + ".final.wav")
         print " * Done."
+        self.finished = True
         self.listener.answer()
 
     def cancel(self):
@@ -66,19 +55,23 @@ class Recorder:
             self.listener.cancel_listening()
 
     def __start__(self, vader, arg0):
-        print " # vader:start"
-        struct = gst.Structure('vader_start')
-        struct.set_value('arg0', arg0)
-        vader.post_message(gst.message_new_application(vader, struct))
+        if not self.finished:
+            print " # vader:start"
+            struct = gst.Structure('vader_start')
+            struct.set_value('arg0', arg0)
+            vader.post_message(gst.message_new_application(vader, struct))
 
     def __stop__(self, vader, arg0):
-        print " # vader:stop"
-        struct = gst.Structure('vader_stop')
-        struct.set_value('arg0', arg0)
-        vader.post_message(gst.message_new_application(vader, struct))
+        if not self.finished:
+            print " # vader:stop"
+            struct = gst.Structure('vader_stop')
+            struct.set_value('arg0', arg0)
+            vader.post_message(gst.message_new_application(vader, struct))
 
     def __application_message__(self, bus, msg):
         msgtype = msg.structure.get_name()
+        if self.finished:
+            return
         if msgtype == 'vader_stop':
             self.stop()
         elif msgtype == 'vader_start':

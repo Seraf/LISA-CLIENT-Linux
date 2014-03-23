@@ -13,24 +13,20 @@ from twisted.internet.defer import inlineCallbacks, DeferredQueue
 from twisted.protocols.basic import LineReceiver
 from twisted.application import internet, service
 from twisted.python import log
-import subprocess
 import json, os
 from OpenSSL import SSL
 import platform
 from twisted.application.internet import TimerService
 
-import tempfile
-import urllib2
 import pygst
 pygst.require('0.10')
 gobject.threads_init()
-import gst
 
-from lib import Listener
+from lib import Listener, player
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
-soundfile = os.path.normpath(dir_path + '/tmp/output.wav')
+soundfile = '%s/sounds/lisa-output.wav' % dir_path
 configuration = json.load(open(os.path.normpath(dir_path + '/' + 'configuration/lisa.json')))
 sound_queue = DeferredQueue()
 
@@ -43,8 +39,7 @@ def SoundWorker():
     command_create = ('-w', soundfile,
                '-l', configuration['lang'], '"'+ data.encode('UTF-8') + '"')
     create_sound = yield utils.getProcessOutputAndValue('/usr/bin/pico2wave', path='/usr/bin', args=command_create)
-    command_play = ( '-P', soundfile )
-    play_sound = yield utils.getProcessOutputAndValue('/usr/bin/aplay', path='/usr/bin', args=command_play)
+    play_sound = yield player.play('lisa-output')
     os.remove(soundfile)
 
 class LisaClient(LineReceiver):
@@ -66,18 +61,20 @@ class LisaClient(LineReceiver):
         datajson = json.loads(data)
         if configuration['debug']['debug_input']:
             log.msg("INPUT: " + unicode(datajson))
-        if datajson['type'] == 'chat':
-            sound_queue.put(datajson['body'])
-        elif datajson['type'] == 'command':
-            if datajson['command'] == 'LOGIN':
-                print "I found login"
-                self.bot_name = unicode(datajson['bot_name'])
-                global botname
-                botname = unicode(datajson['bot_name'])
-                print "setting botname to %s" % self.bot_name
+        if 'type' in datajson:
+            if datajson['type'] == 'chat':
                 sound_queue.put(datajson['body'])
-                Listener(lisaclient=self, botname=botname)
-
+            elif datajson['type'] == 'command':
+                if datajson['command'] == 'LOGIN':
+                    print "I found login"
+                    self.bot_name = unicode(datajson['bot_name'])
+                    global botname
+                    botname = unicode(datajson['bot_name'])
+                    print "setting botname to %s" % self.bot_name
+                    sound_queue.put(datajson['body'])
+                    Listener(lisaclient=self, botname=botname)
+        else:
+            sound_queue.put(datajson['body'])
 
     def connectionMade(self):
         log.msg('Connected to Lisa.')
@@ -85,13 +82,14 @@ class LisaClient(LineReceiver):
             ctx = ClientTLSContext()
             self.transport.startTLS(ctx, self.factory)
         self.sendMessage(message='LOGIN', type='command')
-
         #init gobject threads
         gobject.threads_init()
         #we want a main loop
         main_loop = gobject.MainLoop()
         #handle sigint
         signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+
 
 
 class LisaClientFactory(ReconnectingClientFactory):
@@ -126,8 +124,6 @@ class CtxFactory(ssl.ClientContextFactory):
 
         return ctx
 
-if not os.path.exists("tmp"):
-    os.makedirs("tmp")
 
 # Creating MultiService
 application = service.Application("LISA-Client")
