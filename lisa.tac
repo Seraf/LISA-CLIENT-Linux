@@ -74,9 +74,10 @@ class LisaClient(LineReceiver):
                 self.bot_name = unicode(datajson['bot_name'])
                 global botname
                 botname = unicode(datajson['bot_name'])
-                Listener(lisaclient=self, botname=botname)
                 print "setting botname to %s" % self.bot_name
                 sound_queue.put(datajson['body'])
+                Listener(lisaclient=self, botname=botname)
+
 
     def connectionMade(self):
         log.msg('Connected to Lisa.')
@@ -124,6 +125,9 @@ class CtxFactory(ssl.ClientContextFactory):
         ctx.use_privatekey_file(os.path.normpath(dir_path + '/' + 'configuration/ssl//client.key'))
 
         return ctx
+
+if not os.path.exists("tmp"):
+    os.makedirs("tmp")
 
 # Creating MultiService
 application = service.Application("LISA-Client")

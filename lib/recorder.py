@@ -35,16 +35,7 @@ class Recorder:
         print " * Recording..."
 
     def stop(self):
-        print " * (silence)"
-        gobject.timeout_add_seconds(1, self.stop_now)
-
-    def stop_now(self):
         print " # stop_now"
-        if self.finished == True:
-            self.listener.cancel_listening()
-            return
-
-        self.finished = True
         print " * Stored recording to ", self.recording
 
         #self.pipeline.set_state(gst.STATE_NULL)
@@ -59,7 +50,6 @@ class Recorder:
         #os.system("flac -f --best --sample-rate 16000 -o %s.flac %s.final.wav"  % (self.recording, self.recording))
         #os.unlink(self.recording + ".final.wav")
         print " * Done."
-        self.stop()
         self.listener.answer()
 
     def cancel(self):
