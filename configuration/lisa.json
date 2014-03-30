@@ -10,5 +10,8 @@
     "zone": "zone2",
     "tts": "pico",
     "lang": "fr-FR",
-    "wit_token": "ATSHFOROYVUWQ3HTYBGHJNNYAXD7NTBC"
+    "wit_token": "ATSHFOROYVUWQ3HTYBGHJNNYAXD7NTBC",
+
+    "record_seconds": 3,
+    "sleep_time": 15
 }
