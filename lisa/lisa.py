@@ -1,11 +1,10 @@
-from twisted.internet import glib2reactor # for non-GUI apps
-glib2reactor.install()
-
 import sys
 import signal
 gobjectnotimported = False
 
 try:
+    from twisted.internet import glib2reactor # for non-GUI apps
+    glib2reactor.install()
     import gobject
     from dbus.mainloop.glib import DBusGMainLoop
     DBusGMainLoop(set_as_default=True)
