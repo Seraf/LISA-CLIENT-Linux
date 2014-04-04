@@ -1,3 +1,9 @@
+State of the project :
+
+.. image:: https://travis-ci.org/Seraf/LISA-CLIENT-Linux.png
+
+Overview
+########
 The LISA-Client is a software which will be installed on multiple platforms.
 This client will listen for a sound/voice and will transmit it to LISA-Engine.
 
