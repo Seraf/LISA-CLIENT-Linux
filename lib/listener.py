@@ -23,15 +23,15 @@ class Listener:
     def __init__(self, lisaclient, botname):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
-        configuration = json.load(open(os.path.normpath(dir_path + '/../' + 'configuration/lisa.json')))
+        self.configuration = json.load(open(os.path.normpath(dir_path + '/../' + 'configuration/lisa.json')))
         self.recordingfile = '/tmp/google.wav'
         self.recording_state = False
         self.botname = botname
         self.lisaclient = lisaclient
         self.failed = 0
         self.keyword_identified = 0
-        self.recorder = Recorder(listener=self,configuration=configuration)
-        self.wit = Wit(configuration['wit_token'])
+        self.recorder = Recorder(listener=self,configuration=self.configuration)
+        self.wit = Wit(self.configuration['wit_token'])
 
         # The goal is to listen for a keyword. When I have this keyword, I open the valve and the voice is recorded
         # to the file. Then I submit this file to google/wit, and drop again the flow to not write in the file.
@@ -66,7 +66,7 @@ class Listener:
             struct = gst.Structure('result')
             dec_text, dec_uttid, dec_score = self.ps.get_hyp()
 
-            if dec_score >= -19000:
+            if dec_score >= self.configuration['keyword_score']:
                 log.msg("======================")
                 log.msg("%s keyword detected" % self.botname)
                 log.msg("score: {}".format(dec_score))
@@ -96,7 +96,6 @@ class Listener:
         print " * Contacting Google"
 
         result = self.wit.post_speech(wavfile)
-        print result
         if len(result) == 0:
             print " * nop"
             log.msg("cancel_listening : player.play('pi-cancel')")
@@ -113,7 +112,7 @@ class Listener:
         return self.pipeline
 
     def get_wav_file_location(self):
-        return self.recording
+        return self.recordingfile
 
     def __result__(self, listener, text, uttid):
         """We're inside __result__"""

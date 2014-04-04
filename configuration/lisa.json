@@ -13,5 +13,6 @@
     "wit_token": "ATSHFOROYVUWQ3HTYBGHJNNYAXD7NTBC",
 
     "record_seconds": 3,
-    "sleep_time": 15
+    "sleep_time": 15,
+    "keyword_score": -19000
 }

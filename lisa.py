@@ -56,7 +56,7 @@ class LisaClient(LineReceiver):
         self.sendLine(json.dumps(
             {"from": unicode(platform.node()), "type": type, "body": unicode(message), "zone": configuration['zone']})
         )
-
+    # TODO clean the global botname. I needed to use it, but I think we can use the self.bot_name instead
     def lineReceived(self, data):
         datajson = json.loads(data)
         if configuration['debug']['debug_input']:
@@ -66,13 +66,14 @@ class LisaClient(LineReceiver):
                 sound_queue.put(datajson['body'])
             elif datajson['type'] == 'command':
                 if datajson['command'] == 'LOGIN':
-                    print "I found login"
+                    log.msg("I found login")
                     self.bot_name = unicode(datajson['bot_name'])
                     global botname
                     botname = unicode(datajson['bot_name'])
-                    print "setting botname to %s" % self.bot_name
+                    log.msg("setting botname to %s" % self.bot_name)
                     sound_queue.put(datajson['body'])
-                    Listener(lisaclient=self, botname=botname)
+                    if not 'nolistener' in datajson:
+                        Listener(lisaclient=self, botname=botname)
         else:
             sound_queue.put(datajson['body'])
 
