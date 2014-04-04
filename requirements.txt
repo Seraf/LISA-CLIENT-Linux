@@ -1,2 +1,3 @@
 Twisted>=12.3.0
 PyWit>=0.1.4
+pygobject>=3.10.2
