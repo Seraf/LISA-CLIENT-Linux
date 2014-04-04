@@ -3,10 +3,19 @@ glib2reactor.install()
 
 import sys
 import signal
-import gobject
-from dbus.mainloop.glib import DBusGMainLoop
-DBusGMainLoop(set_as_default=True)
+gobjectnotimported = False
 
+try:
+    import gobject
+    from dbus.mainloop.glib import DBusGMainLoop
+    DBusGMainLoop(set_as_default=True)
+    import pygst
+    pygst.require('0.10')
+    gobject.threads_init()
+    from lib import Listener, player
+except:
+    gobjectnotimported = True
+    pass
 from twisted.internet import ssl, utils
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet.defer import inlineCallbacks, DeferredQueue
@@ -18,11 +27,6 @@ from OpenSSL import SSL
 import platform
 from twisted.application.internet import TimerService
 
-import pygst
-pygst.require('0.10')
-gobject.threads_init()
-
-from lib import Listener, player
 
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
@@ -72,7 +76,7 @@ class LisaClient(LineReceiver):
                     botname = unicode(datajson['bot_name'])
                     log.msg("setting botname to %s" % self.bot_name)
                     sound_queue.put(datajson['body'])
-                    if not 'nolistener' in datajson:
+                    if not 'nolistener' in datajson and not gobjectnotimported:
                         Listener(lisaclient=self, botname=botname)
         else:
             sound_queue.put(datajson['body'])
@@ -83,12 +87,13 @@ class LisaClient(LineReceiver):
             ctx = ClientTLSContext()
             self.transport.startTLS(ctx, self.factory)
         self.sendMessage(message='LOGIN', type='command')
-        #init gobject threads
-        gobject.threads_init()
-        #we want a main loop
-        main_loop = gobject.MainLoop()
-        #handle sigint
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        if not gobjectnotimported:
+            #init gobject threads
+            gobject.threads_init()
+            #we want a main loop
+            main_loop = gobject.MainLoop()
+            #handle sigint
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 
