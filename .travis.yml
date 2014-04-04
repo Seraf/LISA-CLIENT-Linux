@@ -1,0 +1,21 @@
+language: python
+
+python:
+    - 2.7
+env:
+  - TWISTED=svn+svn://svn.twistedmatrix.com/svn/Twisted/trunk PYOPENSSL=PyOpenSSL
+  - TWISTED=Twisted==13.2.0 PYOPENSSL=PyOpenSSL
+
+install:
+  - pip install $TWISTED --use-mirrors
+  - 'test -n "$PYOPENSSL" && pip install $PYOPENSSL --use-mirrors || true'
+  - pip install -r requirements.txt --use-mirrors
+
+script:
+  - trial lisa
+
+notifications:
+  irc: "irc.oftc.net#lisa"
+branches:
+  only:
+    - master
