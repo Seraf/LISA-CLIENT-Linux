@@ -2,7 +2,7 @@ language: python
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install python-dev build-essential gstreamer0.10-plugins-good
+  - sudo apt-get install python-dev build-essential gstreamer0.10-plugins-good python-gobject
 
 python:
     - 2.7
