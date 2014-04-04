@@ -2,7 +2,7 @@ language: python
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qy python-dev build-essential gstreamer0.10-plugins-good python-gobject python-gi
+  - sudo apt-get install -qy python-dev build-essential gstreamer0.10-plugins-good python-gobject python-gi gstreamer0.10-pocketsphinx gstreamer0.10-alsa
 
 python:
     - 2.7
@@ -12,7 +12,7 @@ env:
 
 install:
   - pip install $TWISTED
-  - 'test -n "$PYOPENSSL" && pip install $PYOPENSSL --use-mirrors || true'
+  - 'test -n "$PYOPENSSL" && pip install $PYOPENSSL || true'
   - pip install -r requirements.txt
 
 script:
