@@ -1,9 +1,5 @@
 language: python
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qy python-dev build-essential gstreamer0.10-plugins-good gstreamer0.10-pocketsphinx gstreamer0.10-alsa
-
 python:
     - 2.7
 env:
@@ -12,8 +8,8 @@ env:
 
 install:
   - pip install $TWISTED
+  - sh install.sh
   - 'test -n "$PYOPENSSL" && pip install $PYOPENSSL || true'
-  - pip install -r requirements.txt
 
 script:
   - trial lisa
