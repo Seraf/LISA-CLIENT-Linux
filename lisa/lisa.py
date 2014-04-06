@@ -47,9 +47,12 @@ def SoundWorker():
 
 class LisaClient(LineReceiver):
     def __init__(self,factory):
+        global gobjectnotimported
+        self.gobjectnotimported = gobjectnotimported
         self.factory = factory
         self.bot_name = "lisa"
         botname = "lisa"
+        self.listener = None
 
     def sendMessage(self, message, type='chat'):
         if configuration['debug']['debug_output']:
@@ -59,6 +62,7 @@ class LisaClient(LineReceiver):
         self.sendLine(json.dumps(
             {"from": unicode(platform.node()), "type": type, "body": unicode(message), "zone": configuration['zone']})
         )
+
     # TODO clean the global botname. I needed to use it, but I think we can use the self.bot_name instead
     def lineReceived(self, data):
         datajson = json.loads(data)
@@ -76,7 +80,7 @@ class LisaClient(LineReceiver):
                     log.msg("setting botname to %s" % self.bot_name)
                     sound_queue.put(datajson['body'])
                     if not 'nolistener' in datajson and not gobjectnotimported:
-                        Listener(lisaclient=self, botname=botname)
+                        self.listener = Listener(lisaclient=self, botname=botname)
         else:
             sound_queue.put(datajson['body'])
 

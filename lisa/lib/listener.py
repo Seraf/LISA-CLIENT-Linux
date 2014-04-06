@@ -73,16 +73,11 @@ class Listener:
 
                 self.failed = 0
                 self.keyword_identified = 1
-                log.msg("should play listening")
-                player.play('pi-listening')
-                self.listen()
+                self.pipeline.set_state(gst.STATE_PAUSED)
+                self.answer()
             else:
                 log.msg("I recognized the %s keyword but I think it's a false positive according the %s score" %
                         (self.botname.lower(), dec_score))
-
-    def listen(self):
-        self.pipeline.set_state(gst.STATE_PAUSED)
-        self.recorder.listen_for_speech()
 
     def cancel_listening(self):
         log.msg("cancel_listening : player.play('pi-cancel')")
@@ -91,20 +86,16 @@ class Listener:
 
     # question - sound recording
     def answer(self):
+        CONTENT_TYPE = 'raw;encoding=signed-integer;bits=16;rate=16000;endian=little'
+        result = self.wit.post_speech(data=self.recorder.capture_audio(), content_type=CONTENT_TYPE)
         player.play('pi-cancel')
-        wavfile = open(self.recordingfile, 'r').read()
-        print " * Contacting Google"
-
-        result = self.wit.post_speech(wavfile)
+        log.msg(" * Contacting Google")
         if len(result) == 0:
-            print " * nop"
             log.msg("cancel_listening : player.play('pi-cancel')")
             player.play('pi-cancel')
         else:
-            print result
+            log.msg(result)
             self.lisaclient.sendMessage(result['msg_body'])
-        open(self.recordingfile, 'w').write('')
-        #del self.recorder
         self.recording_state = False
         self.pipeline.set_state(gst.STATE_PLAYING)
 
