@@ -1,29 +1,35 @@
 try:
-        import sphinxbase
-        import pocketsphinx
+    import sphinxbase
+    import pocketsphinx
 except:
-        pass
+    pass
 import pocketsphinx
-
-import player
-from recorder import Recorder
 from wit import Wit
 import gobject
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
 from twisted.python import log
 import json, os
-
 import pygst
 pygst.require('0.10')
 gobject.threads_init()
 import gst
+from lisa.client.lib import player
+from lisa.client.lib.recorder import Recorder
+
+
+path = os.path.abspath(__file__)
+dir_path = os.path.dirname(path)
+if os.path.exists('/etc/lisa/client/configuration/lisa.json'):
+    configuration = json.load(open('/etc/lisa/client/configuration/lisa.json'))
+else:
+    configuration = json.load(open(os.path.normpath(dir_path + '/../' + 'configuration/lisa.json')))
+
 
 class Listener:
     def __init__(self, lisaclient, botname):
-        path = os.path.abspath(__file__)
-        dir_path = os.path.dirname(path)
-        self.configuration = json.load(open(os.path.normpath(dir_path + '/../' + 'configuration/lisa.json')))
+
+        self.configuration = configuration
         self.recordingfile = '/tmp/google.wav'
         self.recording_state = False
         self.botname = botname
@@ -45,8 +51,12 @@ class Listener:
         self.vader = self.pipeline.get_by_name('vad')
 
         asr = self.pipeline.get_by_name('asr')
-        asr.set_property("dict", '%s' % dir_path + '/pocketsphinx/lisa.dic')
-        asr.set_property("lm", '%s' % dir_path + '/pocketsphinx/lisa.lm')
+        if os.path.isfile('/var/lib/lisa/client/pocketsphinx/lisa.dic'):
+            asr.set_property("dict", '/var/lib/lisa/client/pocketsphinx/lisa.dic')
+            asr.set_property("lm", '/var/lib/lisa/client/pocketsphinx/lisa.lm')
+        else:
+            asr.set_property("dict", "%s/lib/pocketsphinx/lisa.dic" % os.path.normpath(dir_path + '/../'))
+            asr.set_property("lm", "%s/lib/pocketsphinx/lisa.lm" % os.path.normpath(dir_path + '/../'))
         asr.connect('result', self.__result__)
         asr.set_property('configured', True)
 
@@ -73,8 +83,7 @@ class Listener:
 
                 self.failed = 0
                 self.keyword_identified = 1
-                self.pipeline.set_state(gst.STATE_PAUSED)
-                self.answer()
+                self.record()
             else:
                 log.msg("I recognized the %s keyword but I think it's a false positive according the %s score" %
                         (self.botname.lower(), dec_score))
@@ -84,8 +93,12 @@ class Listener:
         player.play('pi-cancel')
         self.recording_state = False
 
-    # question - sound recording
-    def answer(self):
+    # sound recording
+    def record(self):
+        self.pipeline.set_state(gst.STATE_PAUSED)
+        self.recording_state = True
+        # This content type (raw) allow to send data from mic directly to Wit and stream chunks
+        # thanks to the generator
         CONTENT_TYPE = 'raw;encoding=signed-integer;bits=16;rate=16000;endian=little'
         result = self.wit.post_speech(data=self.recorder.capture_audio(), content_type=CONTENT_TYPE)
         player.play('pi-cancel')

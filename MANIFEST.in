@@ -1,0 +1,4 @@
+include requirements.txt
+recursive-include lisa *.lm *.dic *.json *.sample *.wav *.rst
+graft twisted
+prune *.pyc

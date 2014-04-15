@@ -1,5 +1,5 @@
 import alsaaudio
-import player
+from lisa.client.lib import player
 
 class Loader():
     def __init__(self, end, every):

@@ -1,38 +1,39 @@
+from twisted.python import log
 import sys
 import signal
 gobjectnotimported = False
 
+from dbus.mainloop.glib import DBusGMainLoop
+DBusGMainLoop(set_as_default=True)
 try:
     from twisted.internet import glib2reactor # for non-GUI apps
     glib2reactor.install()
-    import gobject
-    from dbus.mainloop.glib import DBusGMainLoop
-    DBusGMainLoop(set_as_default=True)
-    import pygst
-    pygst.require('0.10')
-    gobject.threads_init()
-    from lib import Listener, player
 except:
     gobjectnotimported = True
     pass
+import gobject
+import pygst
+pygst.require('0.10')
+gobject.threads_init()
+
+from lisa.client import lib
+
 from twisted.internet import ssl, utils
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet.defer import inlineCallbacks, DeferredQueue
 from twisted.protocols.basic import LineReceiver
 from twisted.application import internet, service
-from twisted.python import log
 import json, os
 from OpenSSL import SSL
 import platform
 from twisted.application.internet import TimerService
 
-
+import pkg_resources
+configuration = json.load(open(pkg_resources.resource_filename(__name__, 'configuration/lisa.json.sample')))
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
 soundfile = '%s/sounds/lisa-output.wav' % dir_path
-configuration = json.load(open(os.path.normpath(dir_path + '/' + 'configuration/lisa.json')))
 sound_queue = DeferredQueue()
-
 botname = ""
 
 
@@ -42,7 +43,7 @@ def SoundWorker():
     command_create = ('-w', soundfile,
                '-l', configuration['lang'], '"'+ data.encode('UTF-8') + '"')
     create_sound = yield utils.getProcessOutputAndValue('/usr/bin/pico2wave', path='/usr/bin', args=command_create)
-    play_sound = yield player.play('lisa-output')
+    play_sound = yield lib.player.play('lisa-output', path='/tmp')
     os.remove(soundfile)
 
 class LisaClient(LineReceiver):
@@ -80,7 +81,17 @@ class LisaClient(LineReceiver):
                     log.msg("setting botname to %s" % self.bot_name)
                     sound_queue.put(datajson['body'])
                     if not 'nolistener' in datajson and not gobjectnotimported:
-                        self.listener = Listener(lisaclient=self, botname=botname)
+                        self.listener = lib.Listener(lisaclient=self, botname=botname)
+                # TODO seems a bit more complicated than I thought. I think the reply will be another type like "answer"
+                # TODO and will contains a unique ID. On server side, the question will be stored in mongodb so it will
+                # TODO let possible the multi user / multi client. Questions need to implement a lifetime too.
+                # TODO For the soundqueue, I will need a callback system to be sure to play the audio before recording
+                elif datajson['command'] == 'ASK':
+                    sound_queue.put(datajson['body'])
+                    if not 'nolistener' in datajson and not gobjectnotimported:
+                        print "==========BEGINING==========="
+                        self.listener.record()
+
         else:
             sound_queue.put(datajson['body'])
 
@@ -119,10 +130,12 @@ class LisaClientFactory(ReconnectingClientFactory):
         log.err('Connection failed. Reason:', reason)
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
+
 class ClientTLSContext(ssl.ClientContextFactory):
     isClient = 1
     def getContext(self):
         return SSL.Context(SSL.TLSv1_METHOD)
+
 
 class CtxFactory(ssl.ClientContextFactory):
     def getContext(self):
@@ -133,20 +146,28 @@ class CtxFactory(ssl.ClientContextFactory):
 
         return ctx
 
-
 # Creating MultiService
 application = service.Application("LISA-Client")
-multi = service.MultiService()
-multi.setServiceParent(application)
 
-sound_service = TimerService(0.01, SoundWorker)
-sound_service.setServiceParent(multi)
+def makeService(config):
+    global configuration
 
-LisaFactory = LisaClientFactory()
+    if config['configuration']:
+        configuration = json.load(open(config['configuration']))
 
-if configuration['enable_secure_mode']:
-    lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port_ssl'], LisaFactory, CtxFactory())
-else:
-    lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port'], LisaFactory)
+    multi = service.MultiService()
+    multi.setServiceParent(application)
 
-lisaclientService.setServiceParent(multi)
+    sound_service = TimerService(0.01, SoundWorker)
+    sound_service.setServiceParent(multi)
+
+    LisaFactory = LisaClientFactory()
+
+    if configuration['enable_secure_mode']:
+        lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port_ssl'], LisaFactory, CtxFactory())
+    else:
+        lisaclientService =  internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port'], LisaFactory)
+
+    lisaclientService.setServiceParent(multi)
+    return multi
+#makeService(config=[])
