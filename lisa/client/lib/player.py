@@ -12,6 +12,7 @@ def play(sound, path=None):
 
     if path:
         __PLAYER__.set_property('uri', 'file://%s/%s.wav' % (path, sound))
+    else:
+        __PLAYER__.set_property('uri', 'file://%s/sounds/%s.wav' % (PWD, sound))
 
-    __PLAYER__.set_property('uri', 'file://%s/sounds/%s.wav' % (PWD, sound))
     __PLAYER__.set_state(gst.STATE_PLAYING)

@@ -34,7 +34,7 @@ import pkg_resources
 configuration = json.load(open(pkg_resources.resource_filename(__name__, 'configuration/lisa.json.sample')))
 path = os.path.abspath(__file__)
 dir_path = os.path.dirname(path)
-soundfile = '%s/sounds/lisa-output.wav' % dir_path
+soundfile = '/tmp/lisa-output.wav'
 sound_queue = DeferredQueue()
 botname = ""
 
@@ -45,8 +45,12 @@ def SoundWorker():
     command_create = ('-w', soundfile,
                '-l', configuration['lang'], '"'+ data.encode('UTF-8') + '"')
     create_sound = yield utils.getProcessOutputAndValue('/usr/bin/pico2wave', path='/usr/bin', args=command_create)
-    play_sound = yield lib.player.play('lisa-output', path='/tmp')
-    os.remove(soundfile)
+    if os.path.isfile(soundfile):
+        play_sound = yield lib.player.play('lisa-output', path='/tmp')
+        os.remove(soundfile)
+    else:
+        log.err("There was an error creating the output file %s" % soundfile)
+
 
 class LisaClient(LineReceiver):
     def __init__(self,factory):

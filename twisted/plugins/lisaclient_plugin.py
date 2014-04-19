@@ -6,6 +6,7 @@ from twisted.plugin import IPlugin
 
 from lisa.client import service
 
+
 class Options(usage.Options):
     optParameters = [
         ['configuration', 'c', '/etc/lisa/client/configuration/lisa.json'],
@@ -16,7 +17,7 @@ class ServiceMaker(object):
 
     tapname = "lisa-client"
     description = "Lisa client."
-    options=Options
+    options = Options
 
     def makeService(self, config):
         return service.makeService(config)
