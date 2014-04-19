@@ -3,15 +3,13 @@ import signal
 gobjectnotimported = False
 
 
-#try:
-#    from twisted.internet import glib2reactor # for non-GUI apps
-#    glib2reactor.install()
-#except:
-#    gobjectnotimported = True
-#    pass
+try:
+    from dbus.mainloop.glib import DBusGMainLoop
+    DBusGMainLoop(set_as_default=True)
+except:
+    gobjectnotimported = True
+    pass
 
-from dbus.mainloop.glib import DBusGMainLoop
-DBusGMainLoop(set_as_default=True)
 
 import gobject
 import pygst
