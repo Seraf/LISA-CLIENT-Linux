@@ -10,11 +10,11 @@ try:
     import pygst
     pygst.require('0.10')
     gobject.threads_init()
+    from lisa.client import lib
 except:
     gobjectnotimported = True
     pass
 
-from lisa.client import lib
 
 from twisted.internet import ssl, utils
 from twisted.internet.protocol import ReconnectingClientFactory
