@@ -1,4 +1,4 @@
-from lisa.lisa import LisaClientFactory
+from lisa.client.service import LisaClientFactory
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 
