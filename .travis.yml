@@ -8,14 +8,16 @@ env:
 
 install:
   - pip install $TWISTED
-  - sh install.sh
   - 'test -n "$PYOPENSSL" && pip install $PYOPENSSL || true'
+  - pip install -r requirements.txt
+  - cp lisa/configuration/lisa.json.sample lisa/configuration/lisa.json
 
 script:
-  - trial lisa
+  - trial lisa/client
 
 notifications:
   irc: "irc.oftc.net#lisa"
+
 branches:
   only:
     - master
