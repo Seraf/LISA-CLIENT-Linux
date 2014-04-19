@@ -6,15 +6,13 @@ gobjectnotimported = False
 try:
     from dbus.mainloop.glib import DBusGMainLoop
     DBusGMainLoop(set_as_default=True)
+    import gobject
+    import pygst
+    pygst.require('0.10')
+    gobject.threads_init()
 except:
     gobjectnotimported = True
     pass
-
-
-import gobject
-import pygst
-pygst.require('0.10')
-gobject.threads_init()
 
 from lisa.client import lib
 
