@@ -1,5 +1,5 @@
+# It fixes a bug with the pocketpshinx import. The first time it fails, but the second import is ok.
 try:
-    import sphinxbase
     import pocketsphinx
 except:
     pass
@@ -30,19 +30,16 @@ class Listener:
     def __init__(self, lisaclient, botname):
 
         self.configuration = configuration
-        self.recordingfile = '/tmp/google.wav'
         self.recording_state = False
         self.botname = botname
         self.lisaclient = lisaclient
         self.failed = 0
         self.keyword_identified = 0
-        self.recorder = Recorder(listener=self,configuration=self.configuration)
+        self.recorder = Recorder(configuration=self.configuration)
         self.wit = Wit(self.configuration['wit_token'])
 
-        # The goal is to listen for a keyword. When I have this keyword, I open the valve and the voice is recorded
-        # to the file. Then I submit this file to google/wit, and drop again the flow to not write in the file.
-        #
-        # Current problem : file doesn't seems to be updated.
+        # The goal is to listen for a keyword. When I have this keyword, it records for few seconds and stream the
+        # flow to Wit which answer by json.
 
         self.pipeline = gst.parse_launch('alsasrc ! audioconvert ! audioresample '
 				+ '! vader name=vad auto-threshold=true '
@@ -57,21 +54,15 @@ class Listener:
         else:
             asr.set_property("dict", "%s/lib/pocketsphinx/lisa.dic" % os.path.normpath(dir_path + '/../'))
             asr.set_property("lm", "%s/lib/pocketsphinx/lisa.lm" % os.path.normpath(dir_path + '/../'))
-        asr.connect('result', self.__result__)
+        asr.connect('result', self.result)
         asr.set_property('configured', True)
 
         self.ps = pocketsphinx.Decoder(boxed=asr.get_property('decoder'))
 
-        bus = self.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect('message::application', self.__application_message__)
-
         self.pipeline.set_state(gst.STATE_PLAYING)
 
-    def partial_result(self, asr, text, uttid):
-        """Forward partial result signals on the bus to the main thread."""
-
-    def result(self, hyp, uttid):
+    def result(self, asr, hyp, uttid):
+        print hyp.lower()
         if hyp.lower() == self.botname.lower() and not self.recording_state:
             struct = gst.Structure('result')
             dec_text, dec_uttid, dec_score = self.ps.get_hyp()
@@ -114,27 +105,3 @@ class Listener:
 
     def get_pipeline(self):
         return self.pipeline
-
-    def get_wav_file_location(self):
-        return self.recordingfile
-
-    def __result__(self, listener, text, uttid):
-        """We're inside __result__"""
-        struct = gst.Structure('result')
-        struct.set_value('hyp', text)
-        struct.set_value('uttid', uttid)
-        listener.post_message(gst.message_new_application(listener, struct))
-
-    def __partial_result__(self, listener, text, uttid):
-        """We're inside __partial_result__"""
-        struct = gst.Structure('partial_result')
-        struct.set_value('hyp', text)
-        struct.set_value('uttid', uttid)
-        listener.post_message(gst.message_new_application(listener, struct))
-
-    def __application_message__(self, bus, msg):
-        msgtype =  msg.structure.get_name()
-        if msgtype == 'partial_result':
-            self.partial_result(msg.structure['hyp'], msg.structure['uttid'])
-        elif msgtype == 'result':
-            self.result(msg.structure['hyp'], msg.structure['uttid'])

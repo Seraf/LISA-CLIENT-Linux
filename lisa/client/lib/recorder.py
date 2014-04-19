@@ -20,8 +20,7 @@ class Loader():
 
 
 class Recorder:
-    def __init__(self, listener, configuration):
-        self.listener = listener
+    def __init__(self, configuration):
         self.configuration = configuration
 
         # Microphone stream config.

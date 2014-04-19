@@ -1,16 +1,18 @@
 from twisted.python import log
-import sys
 import signal
 gobjectnotimported = False
 
+
+#try:
+#    from twisted.internet import glib2reactor # for non-GUI apps
+#    glib2reactor.install()
+#except:
+#    gobjectnotimported = True
+#    pass
+
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
-try:
-    from twisted.internet import glib2reactor # for non-GUI apps
-    glib2reactor.install()
-except:
-    gobjectnotimported = True
-    pass
+
 import gobject
 import pygst
 pygst.require('0.10')
@@ -89,7 +91,6 @@ class LisaClient(LineReceiver):
                 elif datajson['command'] == 'ASK':
                     sound_queue.put(datajson['body'])
                     if not 'nolistener' in datajson and not gobjectnotimported:
-                        print "==========BEGINING==========="
                         self.listener.record()
 
         else:
@@ -152,7 +153,7 @@ application = service.Application("LISA-Client")
 def makeService(config):
     global configuration
 
-    if config['configuration']:
+    if 'configuration' in config.keys():
         configuration = json.load(open(config['configuration']))
 
     multi = service.MultiService()
