@@ -93,13 +93,13 @@ class Listener:
         CONTENT_TYPE = 'raw;encoding=signed-integer;bits=16;rate=16000;endian=little'
         result = self.wit.post_speech(data=self.recorder.capture_audio(), content_type=CONTENT_TYPE)
         player.play('pi-cancel')
-        log.msg(" * Contacting Google")
+        log.msg(" * Contacting Wit")
         if len(result) == 0:
             log.msg("cancel_listening : player.play('pi-cancel')")
             player.play('pi-cancel')
         else:
             log.msg(result)
-            self.lisaclient.sendMessage(result['msg_body'])
+            self.lisaclient.sendMessage(message=result['msg_body'], type='chat', dict=result['outcome'])
         self.recording_state = False
         self.pipeline.set_state(gst.STATE_PLAYING)
 

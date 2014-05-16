@@ -57,14 +57,30 @@ class LisaClient(LineReceiver):
         botname = "lisa"
         self.listener = None
 
-    def sendMessage(self, message, type='chat'):
+    def sendMessage(self, message, type='chat', dict=None):
         if configuration['debug']['debug_output']:
             log.msg('OUTPUT: "from": ' + unicode(platform.node()) + ',"type": ' + type + ', "body": ' + unicode(message) +
                     ', "zone": ' + configuration['zone']
             )
-        self.sendLine(json.dumps(
-            {"from": unicode(platform.node()), "type": type, "body": unicode(message), "zone": configuration['zone']})
-        )
+        if dict:
+            self.sendLine(json.dumps(
+                {
+                    "from": unicode(platform.node()),
+                    "type": type,
+                    "body": unicode(message),
+                    "zone": configuration['zone'],
+                    "outcome": dict
+                }
+            ))
+        else:
+            self.sendLine(json.dumps(
+                {
+                    "from": unicode(platform.node()),
+                    "type": type,
+                    "body": unicode(message),
+                    "zone": configuration['zone']
+                }
+            ))
 
     # TODO clean the global botname. I needed to use it, but I think we can use the self.bot_name instead
     def lineReceived(self, data):
