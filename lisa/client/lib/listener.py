@@ -15,7 +15,7 @@ pygst.require('0.10')
 gobject.threads_init()
 import gst
 from lisa.client.lib import player
-from lisa.client.lib.recorder import Recorder
+from lisa.client.lib.recorder import RecorderSingleton
 
 
 path = os.path.abspath(__file__)
@@ -35,7 +35,6 @@ class Listener:
         self.lisaclient = lisaclient
         self.failed = 0
         self.keyword_identified = 0
-        self.recorder = Recorder(configuration=self.configuration)
         self.wit = Wit(self.configuration['wit_token'])
 
         # The goal is to listen for a keyword. When I have this keyword, it records for few seconds and stream the
@@ -91,7 +90,8 @@ class Listener:
         # This content type (raw) allow to send data from mic directly to Wit and stream chunks
         # thanks to the generator
         CONTENT_TYPE = 'raw;encoding=signed-integer;bits=16;rate=16000;endian=little'
-        result = self.wit.post_speech(data=self.recorder.capture_audio(), content_type=CONTENT_TYPE)
+        result = self.wit.post_speech(data=RecorderSingleton.get(configuration=self.configuration).capture_audio(),
+                                      content_type=CONTENT_TYPE)
         player.play('pi-cancel')
         log.msg(" * Contacting Wit")
         if len(result) == 0:

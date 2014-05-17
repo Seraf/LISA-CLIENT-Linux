@@ -50,3 +50,31 @@ class Recorder:
             _, data = inp.read()
             yield data
         print "[*]> Ready Recognize Voice\n"
+
+class RecorderSingleton(object):
+    """
+    Singleton version of the Recorder.
+
+    Being a singleton, this class should not be initialised explicitly
+    and the ``get`` classmethod must be called instead.
+    """
+
+    __instance = None
+
+    def __init__(self):
+        """
+        Initialisation: this class should not be initialised
+        explicitly and the ``get`` classmethod must be called instead.
+        """
+
+        if self.__instance is not None:
+            raise Exception("Singleton can't be created twice !")
+
+    def get(self, configuration):
+        """
+        Actually create an instance
+        """
+        if self.__instance is None:
+            self.__instance = Recorder(configuration=configuration)
+        return self.__instance
+    get = classmethod(get)
