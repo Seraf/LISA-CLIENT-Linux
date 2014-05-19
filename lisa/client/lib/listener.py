@@ -100,12 +100,10 @@ class Listener:
                 log.msg("I recognized the %s keyword but I think it's a false positive according the %s score" %
                         (self.botname, dec_score))
 
-    def cancel_listening(self, play_sound=True):
+    def stop_recording(self, play_sound = True):
         """Cancel current recording"""
         if self.recording_state == True:
-            log.msg("cancel_listening : player.play('pi-cancel')")
-            if play_sound == True:
-                player.play('pi-cancel')
+            log.msg("stop_recording : player.play('pi-cancel')")
             self.recording_state = False
             self.pipeline.set_state(gst.STATE_PLAYING)
 
@@ -121,17 +119,20 @@ class Listener:
             result = self.wit.post_speech(data=RecorderSingleton.get(configuration=self.configuration).capture_audio(),
                                         content_type=CONTENT_TYPE)
         except:
-            # Cancel command
+            # Cancel current record
             result = ""
+        
+        # Play record end sound
+        player.play('pi-cancel')
         
         # ASR returned no text
         if len(result) == 0:
-            self.cancel_listening(True)
+            self.stop_recording(play_sound = False)
         else:
             # Send recognized text to the server
             log.msg(result)
             self.lisaclient.sendMessage(message=result['msg_body'], type='chat', dict=result['outcome'])
-            self.cancel_listening(False)
+            self.stop_recording(play_sound = False)
 
     def get_pipeline(self):
         """Return Gstreamer pipeline"""
