@@ -4,15 +4,30 @@ import os
 PWD = os.path.dirname(os.path.abspath(__file__ + '/..'))
 __PLAYER__ = gst.element_factory_make("playbin", "player")
 
-def play(sound, path=None):
-    #global PWD
+def play(sound, path=None, ext=None):
+    """
+    Play a sound. Determine path and extension if not provided.
+    """
+    global PWD
     global __PLAYER__
+    
+    # Stop previous play if any
     __PLAYER__.set_state(gst.STATE_NULL)
-    __PLAYER__ = gst.element_factory_make("playbin", "player")
 
-    if path:
-        __PLAYER__.set_property('uri', 'file://%s/%s.wav' % (path, sound))
+    # Get path
+    if not path:
+        path = "%s/sounds" % PWD
+
+    # Search extension
+    if ext and os.path.isfile('%s/%s.%s' % (path, sound, ext)):
+        filename = '%s/%s.%s' % (path, sound, ext)
+    elif os.path.isfile('%s/%s.wav' % (path, sound)):
+        filename = '%s/%s.wav' % (path, sound)
+    elif os.path.isfile('%s/%s.ogg' % (path, sound)):
+        filename = '%s/%s.ogg' % (path, sound)
     else:
-        __PLAYER__.set_property('uri', 'file://%s/sounds/%s.wav' % (PWD, sound))
+        filename = '%s/pi-cancel.wav' % path
 
+    # Play file
+    __PLAYER__.set_property('uri', 'file://%s' % filename)
     __PLAYER__.set_state(gst.STATE_PLAYING)
