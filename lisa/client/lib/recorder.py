@@ -61,6 +61,7 @@ class Recorder(threading.Thread):
         """
         CONTENT_TYPE = 'audio/mpeg3'
         result = ""
+        retry = 1
 
         # Thread loop
         while not self._stopevent.isSet():
@@ -69,11 +70,11 @@ class Recorder(threading.Thread):
                 sleep(.1)
                 continue
 
-            # Activate capture, wait for 2s of silence before cancelling
+            # Activate capture, wait for 3s of silence before cancelling
             self.record_time_start = 0
-            self.record_time_end = time.time() + 2
+            self.record_time_end = time.time() + 3
             self.capture_buffers.clear()
-            result = u""
+            result = ""
 
             # Send captured voice to wit
             try:
@@ -82,20 +83,31 @@ class Recorder(threading.Thread):
                 # On error
                 if self.running_state == True:
                     log.err("Wit exception")
+                    
+                # No retry when no sound recorded
+                if self.record_time_start == 0:
+                    retry = 0
 
             # If record was stopped during recording
             if self.running_state == True:
                 # If Wit returned an error
                 if len(result) == 0:
-                    Speaker.speak('not_understood')
+                    if retry != 0:
+                        Speaker.speak('not_understood')
 
                 # Send recognized text to the server
                 else:
-                    log.msg(result)
                     self.lisa_client.sendMessage(message=result['msg_body'], type='chat', dict=result['outcome'])
+                    retry = 0
 
-            # Reset state
-            self.running_state = False
+            # If no more retry
+            if retry == 0:
+                # Reset state
+                self.running_state = False
+                retry = 1
+            else:
+                # Decrement retries
+                retry = retry - 1
 
     def _vader_start(self, ob, message):
         """
