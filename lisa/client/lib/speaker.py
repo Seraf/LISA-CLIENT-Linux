@@ -125,6 +125,7 @@ class Speaker(threading.Thread):
                     if weight <= 0:
                         break
 
+                # Create filename
                 filename = "%s%s_%s_%d.%s" % (soundpath, self.engine, data, i, self.ext.lower())
 
             # Pico TTS
@@ -151,11 +152,11 @@ class Speaker(threading.Thread):
         for utt in _utterances:
             for i, msg in enumerate(_utterances[utt]):
                 filename = "%s%s_%s_%d.%s" % (soundpath, self.engine, utt, i, self.ext.lower())
-                
+
                 # If already generated
                 if os.path.isfile(filename):
                     continue
-                    
+
                 print "Generating %s : '%s'" % (filename, msg[1])
 
                 # VoiceRSS

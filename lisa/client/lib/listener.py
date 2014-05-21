@@ -47,19 +47,22 @@ class Listener(threading.Thread):
 
         # Build Gstreamer pipeline : mic->Pulse->tee|->queue->audioConvert->audioResample->vader->pocketsphinx->fakesink
         #                                           |->queue->audioConvert->audioResample->lamemp3enc->appsink
+        # fakesink : async=false is mandatory for parallelism
         self.pipeline = gst.parse_launch('pulsesrc '
                                         #+ '! ladspa-gate Threshold=-30.0 Decay=2.0 Hold=2.0 Attack=0.1 '
-                                        + '! tee name=audioTee '
-                                        + ' audioTee. ! queue '
-                                        + '           ! audioconvert ! audioresample '
-                                        + '           ! audio/x-raw-int, format=(string)S16_LE, channels=1, rate=16000 '
-                                        + '           ! lamemp3enc bitrate=64 mono=true '
-                                        + '           ! appsink name=app emit-signals=true '
-                                        + ' audioTee. ! queue '
-                                        + '           ! audioconvert ! audioresample '
-                                        + '           ! vader name=vad_asr '
-                                        + '           ! pocketsphinx name=asr '
-                                        + '           ! fakesink async=false'
+                                        + '! tee name=audio_tee '
+                                        + ' audio_tee. ! queue '
+                                        + '            ! audioconvert ! audioresample '
+                                        + '            ! audio/x-raw-int, format=(string)S16_LE, channels=1, rate=16000 '
+                                        + '            ! lamemp3enc bitrate=64 mono=true '
+                                        + '            ! appsink name=rec_sink emit-signals=true '
+                                        + ' audio_tee. ! queue '
+                                        + '            ! audioconvert ! audioresample '
+                                        + '            ! vader name=vad_asr '
+                                        + '            ! tee name=asr_tee '
+                                        + '             asr_tee. ! fakesink async=false name=asr_sink'
+                                        + '             asr_tee. ! pocketsphinx name=asr '
+                                        + '                      ! fakesink async=false'
                                          )
 
         # Create recorder

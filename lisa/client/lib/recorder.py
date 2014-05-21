@@ -26,13 +26,21 @@ class Recorder(threading.Thread):
         self.record_time_end = 0
 
         # Get app sink
-        self.app_sink = self.pipeline.get_by_name('app')
-        self.app_sink.connect('new-buffer', self._capture_audio_buffer)
+        self.rec_sink = self.pipeline.get_by_name('rec_sink')
+        self.rec_sink.connect('new-buffer', self._capture_audio_buffer)
 
         # Configure vader
+        # Using vader on pocketsphinx branch and not a vader on record branch,
+        # because vader forces stream to 8KHz, so record quality would be worst
         vader = self.pipeline.get_by_name('vad_asr')
         vader.connect('vader-start', self._vader_start)
         vader.connect('vader-stop', self._vader_stop)
+
+        # Get elements to connect/disconnect pockesphinx during record
+        self.asr_tee = self.pipeline.get_by_name('asr_tee')
+        self.asr_sink = self.pipeline.get_by_name('asr_sink')
+        self.asr = self.pipeline.get_by_name('asr')
+        self.asr_tee.unlink(self.asr_sink)
 
         # Start thread
         self.start()
@@ -52,8 +60,15 @@ class Recorder(threading.Thread):
         """
         Start/Stop a voice record
         """
-        print "\n"
-        self.running_state = True
+        if running == True and self.running_state == False:
+            self.running_state = True
+
+            # Disconnect pocketsphinx from pipeline
+            self.asr_tee.link(self.asr_sink)
+            self.asr_tee.unlink(self.asr)
+
+        elif running == True and self.running_state == True:
+            self.running_state = False
 
     def run(self):
         """
@@ -75,6 +90,7 @@ class Recorder(threading.Thread):
             self.record_time_end = time.time() + 3
             self.capture_buffers.clear()
             result = ""
+            print "\n"
 
             # Send captured voice to wit
             try:
@@ -83,7 +99,7 @@ class Recorder(threading.Thread):
                 # On error
                 if self.running_state == True:
                     log.err("Wit exception")
-                    
+
                 # No retry when no sound recorded
                 if self.record_time_start == 0:
                     retry = 0
@@ -105,6 +121,10 @@ class Recorder(threading.Thread):
                 # Reset state
                 self.running_state = False
                 retry = 1
+
+                # Reconnect pocketsphinx to pipeline
+                self.asr_tee.link(self.asr)
+                self.asr_tee.unlink(self.asr_sink)
             else:
                 # Decrement retries
                 retry = retry - 1
@@ -133,7 +153,7 @@ class Recorder(threading.Thread):
         Gstreamer pipeline callback : Audio buffer capture
         """
         # Get buffer
-        Buffer = self.app_sink.emit('pull-buffer')
+        Buffer = self.rec_sink.emit('pull-buffer')
 
         # If recording is running
         if self.running_state == True and self.record_time_start > 0:
@@ -166,4 +186,4 @@ class Recorder(threading.Thread):
                 print '\x1b[1A',
                 print '[Recording]' + '.' * progress + ' ' * (20 - progress) + '[Recording]'
 
-        print "[*]> Ready Recognize Voice\n"
+        print "> Ready Recognize Voice\n"
