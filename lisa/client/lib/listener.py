@@ -69,7 +69,7 @@ class Listener(threading.Thread):
         if os.path.isdir('/var/lib/lisa/client/pocketsphinx'):
             client_path = '/var/lib/lisa/client/pocketsphinx'
         else:
-            client_path = "%s/../lib/pocketsphinx" % PWD
+            client_path = "%s/pocketsphinx" % PWD
 
         # PocketSphinx configuration
         asr = self.pipeline.get_by_name('asr')
@@ -90,7 +90,8 @@ class Listener(threading.Thread):
         """
         Listener main loop
         """
-        player.play("ready")
+        player.play_block("ready")
+        sleep(1) # TODO : <-- WHY ? pockesphinx doesn't begin of no sleep
         self.pipeline.set_state(gst.STATE_PLAYING)
 
         # Thread loop
@@ -113,6 +114,7 @@ class Listener(threading.Thread):
         """
         Result from pocketsphinx : checking keyword recognition
         """
+        print text
         # Check keyword detection
         if text.lower() == self.botname and self.recorder.get_running_state() == False:
             # Get scrore from decoder
@@ -130,7 +132,7 @@ class Listener(threading.Thread):
             log.msg("score: {} (min {}, moy {}, max {})".format(dec_score, min(self.scores), sum(self.scores) / len(self.scores), max(self.scores)))
 
             # Start voice recording
-            player.play('yes')
+            player.play_block('yes')
 
             # Start recorder
             self.recorder.set_running_state(True)

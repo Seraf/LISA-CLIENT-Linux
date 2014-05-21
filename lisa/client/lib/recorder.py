@@ -51,6 +51,7 @@ class Recorder(threading.Thread):
         """
         Start/Stop a voice record
         """
+        print "\n"
         self.running_state = True
 
     def run(self):
@@ -85,7 +86,7 @@ class Recorder(threading.Thread):
             if self.running_state == True:
                 # If Wit returned an error
                 if len(result) == 0:
-                    player.play('not_understood')
+                    player.play_block('not_understood')
 
                 # Send recognized text to the server
                 else:
@@ -153,4 +154,3 @@ class Recorder(threading.Thread):
                 print '[Recording]' + '.' * progress + ' ' * (20 - progress) + '[Recording]'
 
         print "[*]> Ready Recognize Voice\n"
-

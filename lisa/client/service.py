@@ -278,8 +278,7 @@ def makeService(config):
 
     # Check vial configuration
     if not 'lisa_url' in configuration or not 'lisa_engine_port_ssl' in configuration:
-        lib.player.play("error_conf")
-        sleep(3) # until player blocks
+        lib.player.play_block("error_conf")
         return
     
     # Multiservice mode

@@ -3,13 +3,14 @@
 # Imports
 import gst
 import os
+import time
+from time import sleep
 
 # Current path
 PWD = os.path.dirname(os.path.abspath(__file__ + '/..'))
 
 # Create a gtreamer playerbin
 __PLAYER__ = gst.element_factory_make("playbin", "player")
-
 
 def play(sound, path=None, ext=None):
     """
@@ -38,3 +39,11 @@ def play(sound, path=None, ext=None):
     # Play file
     __PLAYER__.set_property('uri', 'file://%s' % filename)
     __PLAYER__.set_state(gst.STATE_PLAYING)
+
+def play_block(sound, path=None, ext=None):
+    global __PLAYER__
+
+    play(sound = sound, path = path, ext = ext)
+    #TODO This code doesn't block
+    #while __PLAYER__.get_state() == gst.STATE_PLAYING:
+    #    sleep(.1)
