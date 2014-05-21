@@ -71,7 +71,7 @@ class Speaker(threading.Thread):
             self.ext = "ogg"
             self.voicerss_key = self.configuration["voicerss_key"]
         else:
-            player.play("error_conf")
+            player.play_block("error_conf")
             return
 
         # Init pre-synthetized utterances
@@ -140,7 +140,7 @@ class Speaker(threading.Thread):
             # Play synthetized file
             if os.path.exists(filename):
                 log.msg("Playing generated TTS")
-                player.play(sound = filename, path = soundpath, ext = self.ext)
+                player.play_block(sound = filename, path = soundpath, ext = self.ext)
             else:
                 print "There was an error creating the output file %s" % filename
 

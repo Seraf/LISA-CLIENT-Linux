@@ -5,12 +5,20 @@ import gst
 import os
 import time
 from time import sleep
+from threading import Lock
 
+mutex = Lock()
 # Current path
 PWD = os.path.dirname(os.path.abspath(__file__ + '/..'))
 
+# Playback mutex : locked during play
+_mutex = Lock()
+def _on_about_to_finish(user):
+    _mutex.release()
+    
 # Create a gtreamer playerbin
-__PLAYER__ = gst.element_factory_make("playbin", "player")
+__PLAYER__ = gst.element_factory_make("playbin2", "player")
+__PLAYER__.connect('about-to-finish', _on_about_to_finish)
 
 def play(sound, path=None, ext=None):
     """
@@ -20,7 +28,7 @@ def play(sound, path=None, ext=None):
     global __PLAYER__
     
     # Stop previous play if any
-    __PLAYER__.set_state(gst.STATE_NULL)
+    __PLAYER__.set_state(gst.STATE_READY)
 
     # Get path
     if not path:
@@ -45,11 +53,18 @@ def play(sound, path=None, ext=None):
     # Play file
     __PLAYER__.set_property('uri', 'file://%s' % filename)
     __PLAYER__.set_state(gst.STATE_PLAYING)
+    
+    # Locked mutex if not already done
+    _mutex.acquire(0)
+
 
 def play_block(sound, path=None, ext=None):
-    global __PLAYER__
-
+    """
+    Play sound but block until end
+    """
+    # Play sound
     play(sound = sound, path = path, ext = ext)
-    #TODO This code doesn't block
-    #while __PLAYER__.get_state() == gst.STATE_PLAYING:
-    #    sleep(.1)
+
+    # Waits end of playback
+    _mutex.acquire()
+    _mutex.release()
