@@ -8,6 +8,7 @@ from wit import Wit
 import time
 from time import sleep
 from twisted.python import log
+from lisa.client.lib.speaker import Speaker
 
 class Recorder(threading.Thread):
     def __init__(self, lisa_client, listener, configuration):
@@ -80,13 +81,13 @@ class Recorder(threading.Thread):
             except:
                 # On error
                 if self.running_state == True:
-                    log.msg("Wit error")
+                    log.err("Wit exception")
 
             # If record was stopped during recording
             if self.running_state == True:
                 # If Wit returned an error
                 if len(result) == 0:
-                    player.play_block('not_understood')
+                    Speaker.speak('not_understood')
 
                 # Send recognized text to the server
                 else:

@@ -16,7 +16,7 @@ except:
     pass
 import pocketsphinx
 from twisted.python import log
-from lisa.client.lib import player
+from lisa.client.lib.speaker import Speaker
 from lisa.client.lib.recorder import Recorder
 from time import sleep
 
@@ -90,8 +90,7 @@ class Listener(threading.Thread):
         """
         Listener main loop
         """
-        player.play_block("ready")
-        sleep(1) # TODO : <-- WHY ? pockesphinx doesn't begin of no sleep
+        Speaker.speak("ready")
         self.pipeline.set_state(gst.STATE_PLAYING)
 
         # Thread loop
@@ -102,7 +101,7 @@ class Listener(threading.Thread):
         """
         Stop listener.
         """
-        player.play('lost_server')
+        Speaker.speak('lost_server')
 
         # Stop everything
         self.pipeline.set_state(gst.STATE_NULL)
@@ -114,7 +113,6 @@ class Listener(threading.Thread):
         """
         Result from pocketsphinx : checking keyword recognition
         """
-        print text
         # Check keyword detection
         if text.lower() == self.botname and self.recorder.get_running_state() == False:
             # Get scrore from decoder
@@ -132,7 +130,7 @@ class Listener(threading.Thread):
             log.msg("score: {} (min {}, moy {}, max {})".format(dec_score, min(self.scores), sum(self.scores) / len(self.scores), max(self.scores)))
 
             # Start voice recording
-            player.play_block('yes')
+            Speaker.speak('yes')
 
             # Start recorder
             self.recorder.set_running_state(True)

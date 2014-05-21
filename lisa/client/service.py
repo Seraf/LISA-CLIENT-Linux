@@ -25,62 +25,15 @@ import json, os
 from OpenSSL import SSL
 import platform
 from twisted.application.internet import TimerService
-import urllib
-from urllib import urlencode, urlopen, urlretrieve
 import pkg_resources
 from lib import Listener
+from lib import Speaker
 
 # Globals
 PWD = os.path.dirname(os.path.abspath(__file__))
 sound_queue = DeferredQueue()
 configuration = None
 LisaFactory = None
-
-def Speak(msg):
-    sound_queue.put(msg)
-
-@inlineCallbacks
-def SoundWorker():
-    """
-    TTS engine mangement
-    """
-
-    soundfile = 'lisa-output'
-    soundpath = '/tmp/'
-
-    # Get data to speak
-    data = yield sound_queue.get()
-    
-    # TODO manage internal messages
-    if data == "no_server":
-        play_sound = yield lib.player.play("no_server")
-    
-    # Pico TTS
-    elif "tts" not in configuration or configuration["tts"].lower() == "pico":
-        ext = "wav"
-        file_name = soundpath + soundfile + "." + ext
-        command_create = ('-w', file_name, '-l', configuration['lang'], '"'+ data.encode('UTF-8') + '"')
-        create_sound = yield utils.getProcessOutputAndValue('/usr/bin/pico2wave', path='/usr/bin', args=command_create)
-
-    # VoiceRSS
-    elif configuration["tts"].lower() == "voicerss" and "voicerss_key" in configuration:
-        ext = "ogg"
-        file_name = soundpath + soundfile + "." + ext
-        url = urlopen("http://api.voicerss.org/?%s" % urlencode({"r": 1, "c": ext.upper(), "f": "16khz_16bit_mono", "key": configuration["voicerss_key"], "src": data.encode('UTF-8'), "hl": "fr-fr"}))
-        with open(os.path.basename(file_name), "wb") as f:
-            yield f.write(url.read())
-
-    # No TTS engine
-    else:
-        play_sound = yield lib.player.play("error_conf")
-        return
-
-    # Play synthetized file
-    if os.path.exists(file_name):
-        play_sound = yield lib.player.play(soundfile, path = soundpath, ext = ext)
-        os.remove(file_name)
-    else:
-        log.err("There was an error creating the output file %s" % file_name)
 
 
 class LisaClient(LineReceiver):
@@ -136,7 +89,7 @@ class LisaClient(LineReceiver):
 
         if 'type' in datajson:
             if datajson['type'] == 'chat':
-                Speak(datajson['body'])
+                Speaker.speak(datajson['body'])
 
             elif datajson['type'] == 'command':
                 if datajson['command'] == 'LOGIN':
@@ -145,7 +98,7 @@ class LisaClient(LineReceiver):
                     log.msg("setting botname to %s" % botname)
                     
                     # Send TTS
-                    Speak(datajson['body'])
+                    Speaker.speak(datajson['body'])
                     
                     # Create listener
                     if not 'nolistener' in datajson and not self.listener:
@@ -156,7 +109,7 @@ class LisaClient(LineReceiver):
                 # TODO let possible the multi user / multi client. Questions need to implement a lifetime too.
                 # TODO For the soundqueue, I will need a callback system to be sure to play the audio before recording
                 elif datajson['command'] == 'ASK':
-                    Speak(datajson['body'])
+                    Speaker.speak(datajson['body'])
                     
                     # Start record
                     if not 'nolistener' in datajson and self.listener:
@@ -164,7 +117,7 @@ class LisaClient(LineReceiver):
 
         else:
             # Send to TTS queue
-            Speak(datajson['body'])
+            Speaker.speak(datajson['body'])
 
     def connectionMade(self):
         """
@@ -222,7 +175,7 @@ class LisaClientFactory(ReconnectingClientFactory):
     def clientConnectionFailed(self, connector, reason):
         # Warn on first failure
         if self.first_time == True:
-            Speak("no_server")
+            Speaker.speak("no_server")
             self.first_time = False
             
         # Retry
@@ -254,15 +207,18 @@ def sigint_handler(signum, frame):
     global LisaFactory
     global sound_service
     
+    # Unregister handler, next Ctrl-C will kill app
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     # Stop factory
     LisaFactory.stopTrying()
     
     # Stop reactor
     reactor.stop()
     
-    # Unregister handler, next Ctrl-C will kill app
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
+    # Stop speaker
+    Speaker.stop()
+    
 # Make twisted service
 def makeService(config):
     global configuration
@@ -275,19 +231,18 @@ def makeService(config):
         configuration = json.load(open("/etc/lisa/client/configuration/lisa.json"))
     else:
         configuration = json.load(open(os.path.normpath(PWD + '/configuration/lisa.json')))
+    
+    # Init speaker singleton
+    Speaker.start(configuration = configuration)
 
     # Check vial configuration
     if not 'lisa_url' in configuration or not 'lisa_engine_port_ssl' in configuration:
-        lib.player.play_block("error_conf")
+        Speaker.speak("error_conf")
         return
     
     # Multiservice mode
     multi = service.MultiService()
     multi.setServiceParent(application)
-
-    # Soundworker as a timer
-    sound_service = TimerService(0.1, SoundWorker)
-    sound_service.setServiceParent(multi)
 
     # Ctrl-C handler
     signal.signal(signal.SIGINT, sigint_handler)

@@ -27,14 +27,20 @@ def play(sound, path=None, ext=None):
         path = "%s/sounds" % PWD
 
     # Search extension
-    if ext and os.path.isfile('%s/%s.%s' % (path, sound, ext)):
+    if os.path.isfile(sound):
+        filename = sound
+    elif ext is not None and os.path.isfile('%s/%s.%s' % (path, sound, ext)):
         filename = '%s/%s.%s' % (path, sound, ext)
     elif os.path.isfile('%s/%s.wav' % (path, sound)):
         filename = '%s/%s.wav' % (path, sound)
     elif os.path.isfile('%s/%s.ogg' % (path, sound)):
         filename = '%s/%s.ogg' % (path, sound)
+    elif os.path.isfile('/tmp/%s.wav' % sound):
+        filename = '/tmp/%s.wav' % sound
+    elif os.path.isfile('/tmp/%s.ogg' % sound):
+        filename = '/tmp/%s.ogg' % sound
     else:
-        filename = '%s/pi-cancel.wav' % path
+        filename = '%s/sounds/pi-cancel.wav' % PWD
 
     # Play file
     __PLAYER__.set_property('uri', 'file://%s' % filename)
