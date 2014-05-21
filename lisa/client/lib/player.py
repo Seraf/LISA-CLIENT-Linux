@@ -1,8 +1,15 @@
+# -*- coding: UTF-8 -*-
+
+# Imports
 import gst
 import os
 
+# Current path
 PWD = os.path.dirname(os.path.abspath(__file__ + '/..'))
+
+# Create a gtreamer playerbin
 __PLAYER__ = gst.element_factory_make("playbin", "player")
+
 
 def play(sound, path=None, ext=None):
     """
