@@ -119,6 +119,7 @@ class Listener(threading.Thread):
             dec_text, dec_uttid, dec_score = self.ps.get_hyp()
 
             # Detection must have a minimal score to be valid
+<<<<<<< HEAD
             if dec_score < self.keyword_score:
                 log.msg("I recognized the %s keyword but I think it's a false positive according the %s score" % (self.botname, dec_score))
                 return
@@ -134,6 +135,60 @@ class Listener(threading.Thread):
 
             # Start recorder
             self.recorder.set_running_state(True)
+=======
+            if dec_score >= self.configuration['keyword_score']:
+                log.msg("======================")
+                log.msg("%s keyword detected" % self.botname)
+                log.msg("score: {}".format(dec_score))
+                
+                # Score stats
+                self.scores.append(dec_score)
+                log.msg("score: min {}, moy {}, max {}".format(min(self.scores), sum(self.scores)/len(self.scores), max(self.scores)))
+
+                # Start voice recording
+                self.failed = 0
+                self.keyword_identified = 1
+                self.record()
+            
+            # Score was too low
+            else:
+                log.msg("I recognized the %s keyword but I think it's a false positive according the %s score" %
+                        (self.botname, dec_score))
+
+    def stop_recording(self):
+        """Cancel current recording"""
+        if self.recording_state == True:
+            log.msg("stop_recording : player.play('pi-cancel')")
+            self.recording_state = False
+            self.pipeline.set_state(gst.STATE_PLAYING)
+
+    def record(self):
+        """Record voice, recognize spoken text and send it to the server"""
+        self.pipeline.set_state(gst.STATE_PAUSED)
+        self.recording_state = True
+        # This content type (raw) allow to send data from mic directly to Wit and stream chunks
+        # thanks to the generator
+        log.msg(" * Contacting Wit")
+        CONTENT_TYPE = 'raw;encoding=signed-integer;bits=16;rate=16000;endian=little'
+        try:
+            result = self.wit.post_speech(data=RecorderSingleton.get(configuration=self.configuration).capture_audio(),
+                                        content_type=CONTENT_TYPE)
+        except:
+            # Cancel current record
+            result = ""
+        
+        # Play record end sound
+        player.play('pi-cancel')
+        
+        # ASR returned no text
+        if len(result) == 0:
+            self.stop_recording()
+        else:
+            # Send recognized text to the server
+            log.msg(result)
+            self.lisaclient.sendMessage(message=result['msg_body'], type='chat', dict=result['outcome'])
+            self.stop_recording()
+>>>>>>> fe04b30a957d1767eb675c7e7b670d90dce75aba
 
     def get_pipeline(self):
         """
