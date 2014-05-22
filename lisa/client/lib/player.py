@@ -5,20 +5,22 @@ import gst
 import os
 import time
 from time import sleep
-from threading import Lock
+import gobject
+gobject.threads_init()
 
-mutex = Lock()
+
 # Current path
 PWD = os.path.dirname(os.path.abspath(__file__ + '/..'))
 
-# Playback mutex : locked during play
-_mutex = Lock()
-def _on_about_to_finish(user):
-    _mutex.release()
-    
 # Create a gtreamer playerbin
-__PLAYER__ = gst.element_factory_make("playbin2", "player")
-__PLAYER__.connect('about-to-finish', _on_about_to_finish)
+__PLAYER__ = None
+
+# Connect End Of Stream handler on bus
+main_loop = gobject.MainLoop()
+def eos_handler(bus, message):
+    __PLAYER__.set_state(gst.STATE_READY)
+    main_loop.quit()
+
 
 def play(sound, path=None, ext=None):
     """
@@ -26,9 +28,19 @@ def play(sound, path=None, ext=None):
     """
     global PWD
     global __PLAYER__
-    
+
+    # Create player once
+    if __PLAYER__ is None:
+        __PLAYER__ = gst.element_factory_make("playbin2", "player")
+        
+        # Connect End Of Stream handler on bus
+        bus = __PLAYER__.get_bus()
+        bus.add_signal_watch()
+        bus.connect('message::eos', eos_handler)
+
     # Stop previous play if any
-    __PLAYER__.set_state(gst.STATE_READY)
+    else:
+        __PLAYER__.set_state(gst.STATE_READY)
 
     # Get path
     if not path:
@@ -53,21 +65,28 @@ def play(sound, path=None, ext=None):
     # Play file
     __PLAYER__.set_property('uri', 'file://%s' % filename)
     __PLAYER__.set_state(gst.STATE_PLAYING)
-    
-    # Locked mutex if not already done
-    _mutex.acquire(0)
 
 
 def play_block(sound, path=None, ext=None):
     """
     Play sound but block until end
     """
+    global main_loop
+
     # Play sound
     play(sound = sound, path = path, ext = ext)
 
-    # Waits end of playback
-    _mutex.acquire()
-    _mutex.release()
+    # Wait for EOS signal in mail loop
+    main_loop.run()
 
-    # Gstreamer about-to-finish message is occuring before real end, so wait a little more
-    sleep(.5)
+
+def play_free():
+    """
+    Free player
+    """
+    global __PLAYER__
+    
+    # Delete player
+    if __PLAYER__ is not None:
+        __PLAYER__.set_state(gst.STATE_NULL)
+        __PLAYER__ = None

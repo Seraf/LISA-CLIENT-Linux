@@ -100,6 +100,9 @@ class Speaker(threading.Thread):
             self.__instance._stopevent.set()
             self.__instance = None
 
+        # Free player
+        player.play_free()
+
     # Export class method
     start = classmethod(_start)
     speak = classmethod(_speak)
