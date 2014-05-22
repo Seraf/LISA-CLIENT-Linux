@@ -40,7 +40,7 @@ class Listener(threading.Thread):
         self.record_time_end = 0
         self.wit_thread = None
         self.loop = None
-        if "keyword_score" in configuration:
+        if configuration.has_key("keyword_score"):
             self.keyword_score = configuration['keyword_score']
         else:
             self.keyword_score = -10000
@@ -78,7 +78,7 @@ class Listener(threading.Thread):
         asr = self.pipeline.get_by_name('asr')
         asr.set_property("dict", "%s/%s.dic" % (client_path, self.botname))
         asr.set_property("lm", "%s/%s.lm" % (client_path, self.botname))
-        if "hmm" in configuration:
+        if configuration.has_key("hmm"):
             hmm_path = "%s/%s" % (client_path, configuration["hmm"])
             if os.path.isdir(hmm_path):
                 asr.set_property("hmm", hmm_path)

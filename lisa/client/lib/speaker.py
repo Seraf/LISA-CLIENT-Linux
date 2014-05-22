@@ -61,9 +61,9 @@ class Speaker(threading.Thread):
         self.configuration = configuration
         self.queue = deque([])
         self.lang = "en-EN"
-        if 'lang' in self.configuration:
+        if self.configuration.has_key('lang'):
             self.lang = self.configuration['lang']
-        if "tts" not in self.configuration or self.configuration["tts"].lower() == "pico"or self.configuration["tts"].lower() == "picotts":
+        if self.configuration.has_key("tts") == False or self.configuration["tts"].lower() == "pico"or self.configuration["tts"].lower() == "picotts":
             self.engine = "pico"
             self.ext = "wav"
         elif self.configuration["tts"].lower() == "voicerss" and "voicerss_key" in self.configuration:
@@ -117,7 +117,7 @@ class Speaker(threading.Thread):
             filename = soundpath + soundfile + "." + self.ext
 
             # System utterances
-            if data in _utterances:
+            if _utterances.has_key(data):
                 # Randomize a weight
                 weight = randint(1, sum((msg[0] for msg in _utterances[data])))
                 for i, msg in enumerate(_utterances[data]):

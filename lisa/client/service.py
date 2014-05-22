@@ -45,13 +45,14 @@ class LisaClient(LineReceiver):
         self.configuration = configuration
         self.listener = None
         self.debug_input = False
-        if "debug" in configuration and "debug_input" in configuration["debug"]:
-            self.debug_input = configuration["debug"]["debug_input"]
         self.debug_output = False
-        if "debug" in configuration and "debug_output" in configuration["debug"]:
-            self.debug_output = configuration["debug"]["debug_output"]
+        if configuration.has_key("debug"):
+            if configuration["debug"].has_key("debug_input"):
+                self.debug_input = configuration["debug"]["debug_input"]
+            if configuration["debug"].has_key("debug_output"):
+                self.debug_output = configuration["debug"]["debug_output"]
         self.zone = ""
-        if "zone" in configuration:
+        if configuration.has_key("zone"):
             self.zone = configuration['zone']
 
     def sendMessage(self, message, type='chat', dict=None):
@@ -87,7 +88,7 @@ class LisaClient(LineReceiver):
         if self.debug_input == True:
             log.msg("INPUT: " + unicode(datajson))
 
-        if 'type' in datajson:
+        if datajson.has_key("type"):
             if datajson['type'] == 'chat':
                 Speaker.speak(datajson['body'])
 
@@ -101,7 +102,7 @@ class LisaClient(LineReceiver):
                     Speaker.speak(datajson['body'])
                     
                     # Create listener
-                    if not 'nolistener' in datajson and not self.listener:
+                    if datajson.has_key('nolistener') == False and not self.listener:
                         self.listener = Listener(lisa_client = self, botname = botname, configuration = self.configuration)
 
                 # TODO seems a bit more complicated than I thought. I think the reply will be another type like "answer"
@@ -112,7 +113,7 @@ class LisaClient(LineReceiver):
                     Speaker.speak(datajson['body'])
                     
                     # Start record
-                    if not 'nolistener' in datajson and self.listener:
+                    if datajson.has_key('nolistener') == False and self.listener:
                         self.listener.record()
 
         else:
@@ -126,7 +127,7 @@ class LisaClient(LineReceiver):
         log.msg('Connected to the server.')
 
         # Set SSL encryption
-        if 'enable_secure_mode' in self.configuration and self.configuration['enable_secure_mode'] == True:
+        if self.configuration.has_key('enable_secure_mode') and self.configuration['enable_secure_mode'] == True:
             ctx = ClientTLSContext()
             self.transport.startTLS(ctx, self.factory)
 
@@ -225,7 +226,7 @@ def makeService(config):
     global LisaFactory
     
     # Client configuration
-    if 'configuration' in config.keys():
+    if config.keys().has_key('configuration'):
         configuration = json.load(open(config['configuration']))
     elif os.path.exists("/etc/lisa/client/configuration/lisa.json"):
         configuration = json.load(open("/etc/lisa/client/configuration/lisa.json"))
@@ -236,7 +237,7 @@ def makeService(config):
     Speaker.start(configuration = configuration)
 
     # Check vial configuration
-    if not 'lisa_url' in configuration or not 'lisa_engine_port_ssl' in configuration:
+    if configuration.has_key('lisa_url') == False or configuration.has_key('lisa_engine_port_ssl') == False:
         Speaker.speak("error_conf")
         return
     
@@ -252,7 +253,7 @@ def makeService(config):
     LisaFactory.Init(configuration)
 
     # Start client
-    if 'enable_secure_mode' in configuration and configuration['enable_secure_mode'] == True:
+    if configuration.has_key('enable_secure_mode') and configuration['enable_secure_mode'] == True:
         lisaclientService = internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port_ssl'], LisaFactory, CtxFactory())
     else:
         lisaclientService = internet.TCPClient(configuration['lisa_url'], configuration['lisa_engine_port'], LisaFactory)
