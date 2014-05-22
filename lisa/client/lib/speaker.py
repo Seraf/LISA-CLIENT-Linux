@@ -4,7 +4,7 @@
 import threading
 import time, os
 from lisa.client.lib import player
-from collections import deque
+from Queue import Queue
 from time import sleep
 from subprocess import call
 import urllib
@@ -59,7 +59,7 @@ class Speaker(threading.Thread):
         self._stopevent = threading.Event()
 
         self.configuration = configuration
-        self.queue = deque([])
+        self.queue = Queue([])
         self.lang = "en-EN"
         if self.configuration.has_key('lang'):
             self.lang = self.configuration['lang']
@@ -85,10 +85,14 @@ class Speaker(threading.Thread):
         if self.__instance is None:
             self.__instance = Speaker(configuration)
 
-    def _speak(self, msg):
+    def _speak(self, msg, block = True):
         # Queue message
         if self.__instance is not None:
-            self.__instance.queue.append(msg)
+            self.__instance.queue.put(msg)
+
+            # Waits the end
+            if block == True:
+                self.__instance.queue.join()
 
     def _stop(self):
         # Raise stop event
@@ -108,12 +112,12 @@ class Speaker(threading.Thread):
         # Thread loop
         while not self._stopevent.isSet():
             # Wait queue
-            if len(self.queue) == 0:
-                sleep(1)
+            if self.queue.empty():
+                sleep(.1)
                 continue
 
             # Get message
-            data = self.queue.popleft()
+            data = self.queue.get()
             filename = soundpath + soundfile + "." + self.ext
 
             # System utterances
@@ -144,6 +148,9 @@ class Speaker(threading.Thread):
                 player.play_block(sound = filename, path = soundpath, ext = self.ext)
             else:
                 print "There was an error creating the output file %s" % filename
+
+            # Remove message from queue
+            self.queue.task_done()
 
     def _init_sys_utterance(self):
         """

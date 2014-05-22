@@ -68,3 +68,6 @@ def play_block(sound, path=None, ext=None):
     # Waits end of playback
     _mutex.acquire()
     _mutex.release()
+
+    # Gstreamer about-to-finish message is occuring before real end, so wait a little more
+    sleep(.5)
