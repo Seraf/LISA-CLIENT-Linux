@@ -56,11 +56,8 @@ class LisaClient(LineReceiver):
             self.zone = configuration['zone']
 
     def sendMessage(self, message, type='chat', dict=None):
-        if self.debug_output:
-            log.msg('OUTPUT: "from": ' + unicode(platform.node()) + ',"type": ' + type + ', "body": ' + unicode(message) + ', "zone": ' + self.zone
-            )
         if dict:
-            self.sendLine(json.dumps(
+            line = json.dumps(
                 {
                     "from": unicode(platform.node()),
                     "type": type,
@@ -68,16 +65,22 @@ class LisaClient(LineReceiver):
                     "zone": self.zone,
                     "outcome": dict
                 }
-            ))
+            )
         else:
-            self.sendLine(json.dumps(
+            line = json.dumps(
                 {
                     "from": unicode(platform.node()),
                     "type": type,
                     "body": unicode(message),
                     "zone": self.zone
                 }
-            ))
+            )
+
+        if self.debug_output:
+            log.msg('OUTPUT: %s' % line)
+
+        # send line to the server
+        self.sendLine(line)
 
     def lineReceived(self, data):
         """

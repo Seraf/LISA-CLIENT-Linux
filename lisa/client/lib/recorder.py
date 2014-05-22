@@ -143,10 +143,10 @@ class Recorder(threading.Thread):
         """
         Vader stop detection
         """
-        # Stop recording if no new sentence in next 1s
+        # Stop recording if no new sentence in next 2s
         if self.running_state == True:
-            if self.record_time_start != 0 and self.record_time_end > time.time() + 1:
-                self.record_time_end = time.time() + 1
+            if self.record_time_start != 0 and self.record_time_end > time.time() + 2:
+                self.record_time_end = time.time() + 2
 
     def _capture_audio_buffer(self, app):
         """
@@ -156,7 +156,11 @@ class Recorder(threading.Thread):
         Buffer = self.rec_sink.emit('pull-buffer')
 
         # If recording is running
-        if self.running_state == True and self.record_time_start > 0:
+        if self.running_state == True:
+            if self.record_time_start == 0:
+                # Start was not called by vader
+                self._vader_start(ob = None, message = None)
+
             # Add buffer to queue
             self.capture_buffers.append(Buffer)
 
