@@ -226,7 +226,7 @@ def makeService(config):
     global LisaFactory
     
     # Client configuration
-    if config.keys().has_key('configuration'):
+    if 'configuration' in config.keys():
         configuration = json.load(open(config['configuration']))
     elif os.path.exists("/etc/lisa/client/configuration/lisa.json"):
         configuration = json.load(open("/etc/lisa/client/configuration/lisa.json"))
