@@ -1,107 +1,145 @@
-# It fixes a bug with the pocketpshinx import. The first time it fails, but the second import is ok.
-try:
+# -*- coding: UTF-8 -*-
+
+# Imports
+import pygst
+pygst.require('0.10')
+import gobject
+gobject.threads_init()
+from dbus.mainloop.glib import DBusGMainLoop
+DBusGMainLoop(set_as_default=True)
+import gst, os
+import threading
+import urllib
+try: # It fixes a bug with the pocketpshinx import. The first time it fails, but the second import is ok.
     import pocketsphinx
 except:
     pass
 import pocketsphinx
-from wit import Wit
-import gobject
-from dbus.mainloop.glib import DBusGMainLoop
-DBusGMainLoop(set_as_default=True)
 from twisted.python import log
-import json, os
-import pygst
-pygst.require('0.10')
-gobject.threads_init()
-import gst
-from lisa.client.lib import player
-from lisa.client.lib.recorder import RecorderSingleton
+from lisa.client.lib.speaker import Speaker
+from lisa.client.lib.recorder import Recorder
+from time import sleep
+
+# Current path
+PWD = os.path.dirname(os.path.abspath(__file__))
 
 
-path = os.path.abspath(__file__)
-dir_path = os.path.dirname(path)
-if os.path.exists('/etc/lisa/client/configuration/lisa.json'):
-    configuration = json.load(open('/etc/lisa/client/configuration/lisa.json'))
-else:
-    configuration = json.load(open(os.path.normpath(dir_path + '/../' + 'configuration/lisa.json')))
+class Listener(threading.Thread):
+    """
+    The goal is to listen for a keyword, then it starts a voice recording
+    """
 
+    def __init__(self, lisa_client, botname, configuration):
+        # Init thread class
+        threading.Thread.__init__(self)
+        self._stopevent = threading.Event()
 
-class Listener:
-    def __init__(self, lisaclient, botname):
-
-        self.configuration = configuration
-        self.recording_state = False
-        self.botname = botname
-        self.lisaclient = lisaclient
-        self.failed = 0
-        self.keyword_identified = 0
-        self.wit = Wit(self.configuration['wit_token'])
-
-        # The goal is to listen for a keyword. When I have this keyword, it records for few seconds and stream the
-        # flow to Wit which answer by json.
-
-        self.pipeline = gst.parse_launch('alsasrc ! audioconvert ! audioresample '
-				+ '! vader name=vad auto-threshold=true '
-				+ '! pocketsphinx name=asr ! fakesink')
-
-        self.vader = self.pipeline.get_by_name('vad')
-
-        asr = self.pipeline.get_by_name('asr')
-        if os.path.isfile('/var/lib/lisa/client/pocketsphinx/lisa.dic'):
-            asr.set_property("dict", '/var/lib/lisa/client/pocketsphinx/lisa.dic')
-            asr.set_property("lm", '/var/lib/lisa/client/pocketsphinx/lisa.lm')
+        self.botname = botname.lower()
+        self.scores = []
+        self.record_time_start = 0
+        self.record_time_end = 0
+        self.wit_thread = None
+        self.loop = None
+        if configuration.has_key("keyword_score"):
+            self.keyword_score = configuration['keyword_score']
         else:
-            asr.set_property("dict", "%s/lib/pocketsphinx/lisa.dic" % os.path.normpath(dir_path + '/../'))
-            asr.set_property("lm", "%s/lib/pocketsphinx/lisa.lm" % os.path.normpath(dir_path + '/../'))
-        asr.connect('result', self.result)
-        asr.set_property('configured', True)
+            self.keyword_score = -10000
 
+        # Build Gstreamer pipeline : mic->Pulse->tee|->queue->audioConvert->audioResample->vader->pocketsphinx->fakesink
+        #                                           |->queue->audioConvert->audioResample->lamemp3enc->appsink
+        # fakesink : async=false is mandatory for parallelism
+        self.pipeline = gst.parse_launch('pulsesrc '
+                                        #+ '! ladspa-gate Threshold=-30.0 Decay=2.0 Hold=2.0 Attack=0.1 '
+                                        + '! tee name=audio_tee '
+                                        + ' audio_tee. ! queue '
+                                        + '            ! audioconvert ! audioresample '
+                                        + '            ! audio/x-raw-int, format=(string)S16_LE, channels=1, rate=16000 '
+                                        + '            ! lamemp3enc bitrate=64 mono=true '
+                                        + '            ! appsink name=rec_sink emit-signals=true '
+                                        + ' audio_tee. ! queue '
+                                        + '            ! audioconvert ! audioresample '
+                                        + '            ! vader name=vad_asr '
+                                        + '            ! tee name=asr_tee '
+                                        + '             asr_tee. ! fakesink async=false name=asr_sink'
+                                        + '             asr_tee. ! pocketsphinx name=asr '
+                                        + '                      ! fakesink async=false'
+                                         )
+
+        # Create recorder
+        self.recorder = Recorder(lisa_client = lisa_client, listener = self, configuration = configuration)
+
+        # Find client path
+        if os.path.isdir('/var/lib/lisa/client/pocketsphinx'):
+            client_path = '/var/lib/lisa/client/pocketsphinx'
+        else:
+            client_path = "%s/pocketsphinx" % PWD
+
+        # PocketSphinx configuration
+        asr = self.pipeline.get_by_name('asr')
+        asr.set_property("dict", "%s/%s.dic" % (client_path, self.botname))
+        asr.set_property("lm", "%s/%s.lm" % (client_path, self.botname))
+        if configuration.has_key("hmm"):
+            hmm_path = "%s/%s" % (client_path, configuration["hmm"])
+            if os.path.isdir(hmm_path):
+                asr.set_property("hmm", hmm_path)
+        asr.connect('result', self._asr_result)
+        asr.set_property('configured', True)
         self.ps = pocketsphinx.Decoder(boxed=asr.get_property('decoder'))
 
+        # Start thread
+        self.start()
+
+    def run(self):
+        """
+        Listener main loop
+        """
+        Speaker.speak("ready")
         self.pipeline.set_state(gst.STATE_PLAYING)
 
-    def result(self, asr, hyp, uttid):
-        print hyp.lower()
-        if hyp.lower() == self.botname.lower() and not self.recording_state:
-            struct = gst.Structure('result')
+        # Thread loop
+        self.loop = gobject.MainLoop()
+        self.loop.run()
+
+    def stop(self):
+        """
+        Stop listener.
+        """
+        Speaker.speak('lost_server')
+
+        # Stop everything
+        self.pipeline.set_state(gst.STATE_NULL)
+        self.recorder.stop()
+        if self.loop is not None:
+            self.loop.quit()
+
+    def _asr_result(self, asr, text, uttid):
+        """
+        Result from pocketsphinx : checking keyword recognition
+        """
+        # Check keyword detection
+        if text.lower() == self.botname and self.recorder.get_running_state() == False:
+            # Get scrore from decoder
             dec_text, dec_uttid, dec_score = self.ps.get_hyp()
 
-            if dec_score >= self.configuration['keyword_score']:
-                log.msg("======================")
-                log.msg("%s keyword detected" % self.botname)
-                log.msg("score: {}".format(dec_score))
+            # Detection must have a minimal score to be valid
+            if dec_score < self.keyword_score:
+                log.msg("I recognized the %s keyword but I think it's a false positive according the %s score" % (self.botname, dec_score))
+                return
 
-                self.failed = 0
-                self.keyword_identified = 1
-                self.record()
-            else:
-                log.msg("I recognized the %s keyword but I think it's a false positive according the %s score" %
-                        (self.botname.lower(), dec_score))
+            # Logs
+            self.scores.append(dec_score)
+            log.msg("======================")
+            log.msg("%s keyword detected" % self.botname)
+            log.msg("score: {} (min {}, moy {}, max {})".format(dec_score, min(self.scores), sum(self.scores) / len(self.scores), max(self.scores)))
 
-    def cancel_listening(self):
-        log.msg("cancel_listening : player.play('pi-cancel')")
-        player.play('pi-cancel')
-        self.recording_state = False
+            # Start voice recording
+            Speaker.speak('yes')
 
-    # sound recording
-    def record(self):
-        self.pipeline.set_state(gst.STATE_PAUSED)
-        self.recording_state = True
-        # This content type (raw) allow to send data from mic directly to Wit and stream chunks
-        # thanks to the generator
-        CONTENT_TYPE = 'raw;encoding=signed-integer;bits=16;rate=16000;endian=little'
-        result = self.wit.post_speech(data=RecorderSingleton.get(configuration=self.configuration).capture_audio(),
-                                      content_type=CONTENT_TYPE)
-        player.play('pi-cancel')
-        log.msg(" * Contacting Wit")
-        if len(result) == 0:
-            log.msg("cancel_listening : player.play('pi-cancel')")
-            player.play('pi-cancel')
-        else:
-            log.msg(result)
-            self.lisaclient.sendMessage(message=result['msg_body'], type='chat', dict=result['outcome'])
-        self.recording_state = False
-        self.pipeline.set_state(gst.STATE_PLAYING)
+            # Start recorder
+            self.recorder.set_running_state(True)
 
     def get_pipeline(self):
+        """
+        Return Gstreamer pipeline
+        """
         return self.pipeline
