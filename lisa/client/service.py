@@ -13,7 +13,6 @@ try:
     gobject.threads_init()
     from lisa.client import lib
     from lib import Listener
-    from lib import Speaker
 except:
     gobjectnotimported = True
 from twisted.internet import ssl, utils
@@ -27,6 +26,7 @@ from lisa.client.ConfigManager import ConfigManagerSingleton
 import json, os
 from OpenSSL import SSL
 import platform
+from lib import Speaker
 
 # Globals
 PWD = os.path.dirname(os.path.abspath(__file__))
