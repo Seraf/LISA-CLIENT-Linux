@@ -36,4 +36,4 @@ class LisaClientTestCase(unittest.TestCase):
         argdict = {"bot_name": "test", "nolistener": True}
         json = self.convertjson(message=message, type="command", command="LOGIN", argdict=argdict)
         self.proto.lineReceived(data=json)
-        self.assertEqual(self.proto.bot_name, "test")
+        self.assertEqual(self.proto.botname, "test")

@@ -9,7 +9,6 @@ from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
 import gst, os
 import threading
-import urllib
 try: # It fixes a bug with the pocketpshinx import. The first time it fails, but the second import is ok.
     import pocketsphinx
 except:
@@ -18,7 +17,7 @@ import pocketsphinx
 from twisted.python import log
 from lisa.client.lib.speaker import Speaker
 from lisa.client.lib.recorder import Recorder
-from time import sleep
+from lisa.client.ConfigManager import ConfigManagerSingleton
 
 # Current path
 PWD = os.path.dirname(os.path.abspath(__file__))
@@ -29,12 +28,13 @@ class Listener(threading.Thread):
     The goal is to listen for a keyword, then it starts a voice recording
     """
 
-    def __init__(self, lisa_client, botname, configuration):
+    def __init__(self, lisa_client, botname):
         # Init thread class
         threading.Thread.__init__(self)
         self._stopevent = threading.Event()
 
-        self.botname = botname.lower()
+        configuration = ConfigManagerSingleton.get().getConfiguration()
+        self.botname = lisa_client.botname.lower()
         self.scores = []
         self.record_time_start = 0
         self.record_time_end = 0
@@ -66,7 +66,7 @@ class Listener(threading.Thread):
                                          )
 
         # Create recorder
-        self.recorder = Recorder(lisa_client = lisa_client, listener = self, configuration = configuration)
+        self.recorder = Recorder(lisa_client = lisa_client, listener = self)
 
         # Find client path
         if os.path.isdir('/var/lib/lisa/client/pocketsphinx'):

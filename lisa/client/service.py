@@ -21,11 +21,10 @@ from twisted.application.internet import TCPClient
 from twisted.protocols.basic import LineReceiver
 from twisted.application import internet, service
 from twisted.internet import reactor
+from lisa.client.ConfigManager import ConfigManagerSingleton
 import json, os
 from OpenSSL import SSL
 import platform
-from twisted.application.internet import TimerService
-import pkg_resources
 from lib import Listener
 from lib import Speaker
 
@@ -40,20 +39,20 @@ class LisaClient(LineReceiver):
     """
     Lisa TCP client
     """
-    def __init__(self, configuration):
+    def __init__(self):
         self.factory = None
-        self.configuration = configuration
+        self.configuration = ConfigManagerSingleton.get().getConfiguration()
         self.listener = None
         self.debug_input = False
         self.debug_output = False
-        if configuration.has_key("debug"):
-            if configuration["debug"].has_key("debug_input"):
-                self.debug_input = configuration["debug"]["debug_input"]
-            if configuration["debug"].has_key("debug_output"):
-                self.debug_output = configuration["debug"]["debug_output"]
+        if self.configuration.has_key("debug"):
+            if self.configuration["debug"].has_key("debug_input"):
+                self.debug_input = self.configuration["debug"]["debug_input"]
+            if self.configuration["debug"].has_key("debug_output"):
+                self.debug_output = self.configuration["debug"]["debug_output"]
         self.zone = ""
-        if configuration.has_key("zone"):
-            self.zone = configuration['zone']
+        if self.configuration.has_key("zone"):
+            self.zone = self.configuration['zone']
 
     def sendMessage(self, message, type='chat', dict=None):
         if dict:
@@ -100,13 +99,14 @@ class LisaClient(LineReceiver):
                     # Get Bot name
                     botname = unicode(datajson['bot_name'])
                     log.msg("setting botname to %s" % botname)
-                    
+                    self.botname = botname
+
                     # Send TTS
                     Speaker.speak(datajson['body'])
                     
                     # Create listener
                     if datajson.has_key('nolistener') == False and not self.listener:
-                        self.listener = Listener(lisa_client = self, botname = botname, configuration = self.configuration)
+                        self.listener = Listener(lisa_client = self, botname = botname)
 
                 # TODO seems a bit more complicated than I thought. I think the reply will be another type like "answer"
                 # TODO and will contains a unique ID. On server side, the question will be stored in mongodb so it will
@@ -154,8 +154,9 @@ class LisaClientFactory(ReconnectingClientFactory):
     # Warn about failure on first connection to the server
     first_time = True
 
-    def Init(self, configuration):
-        self.configuration = configuration
+    def Init(self):
+        self.configuration = ConfigManagerSingleton.get().getConfiguration()
+
 
     def startedConnecting(self, connector):
         pass
@@ -168,7 +169,7 @@ class LisaClientFactory(ReconnectingClientFactory):
         self.first_time = False
 
         # Return protocol
-        self.active_protocol = LisaClient(configuration = self.configuration)
+        self.active_protocol = LisaClient()
         return self.active_protocol
 
     def clientConnectionLost(self, connector, reason):
@@ -225,19 +226,15 @@ def sigint_handler(signum, frame):
     
 # Make twisted service
 def makeService(config):
-    global configuration
     global LisaFactory
     
-    # Client configuration
-    if 'configuration' in config.keys():
-        configuration = json.load(open(config['configuration']))
-    elif os.path.exists("/etc/lisa/client/configuration/lisa.json"):
-        configuration = json.load(open("/etc/lisa/client/configuration/lisa.json"))
-    else:
-        configuration = json.load(open(os.path.normpath(PWD + '/configuration/lisa.json')))
-    
+    if config['configuration']:
+        ConfigManagerSingleton.get().setConfiguration(config['configuration'])
+
+    configuration = ConfigManagerSingleton.get().getConfiguration()
+
     # Init speaker singleton
-    Speaker.start(configuration = configuration)
+    Speaker.start()
 
     # Check vial configuration
     if configuration.has_key('lisa_url') == False or configuration.has_key('lisa_engine_port_ssl') == False:
@@ -253,7 +250,7 @@ def makeService(config):
 
     # Create factory
     LisaFactory = LisaClientFactory()
-    LisaFactory.Init(configuration)
+    LisaFactory.Init()
 
     # Start client
     if configuration.has_key('enable_secure_mode') and configuration['enable_secure_mode'] == True:

@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 # Imports
-from lisa.client.lib import player
+from lisa.client.ConfigManager import ConfigManagerSingleton
 from collections import deque
 import threading
 from wit import Wit
@@ -11,13 +11,13 @@ from twisted.python import log
 from lisa.client.lib.speaker import Speaker
 
 class Recorder(threading.Thread):
-    def __init__(self, lisa_client, listener, configuration):
+    def __init__(self, lisa_client, listener):
         # Init thread class
         threading.Thread.__init__(self)
         self._stopevent = threading.Event()
 
         self.lisa_client = lisa_client
-        self.configuration = configuration
+        self.configuration = ConfigManagerSingleton.get().getConfiguration()
         self.pipeline = listener.get_pipeline()
         self.capture_buffers = deque([])
         self.running_state = False
