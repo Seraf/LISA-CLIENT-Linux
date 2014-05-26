@@ -1,6 +1,11 @@
 State of the project :
 
 .. image:: https://travis-ci.org/Seraf/LISA-CLIENT-Linux.png
+ :target: https://travis-ci.org/Seraf/LISA-CLIENT-Linux
+ 
+.. image:: https://badge.waffle.io/seraf/lisa-client-linux.png?label=ready&title=Ready 
+ :target: https://waffle.io/seraf/lisa-client-linux
+ :alt: 'Stories in Ready'
 
 Overview
 ########
@@ -11,8 +16,12 @@ Clients can be multiple (one per room for example) if needed.
 
 To install it :
 
+```
 pip install lisa-client
+```
 
-To launch the client launch :
+To launch the client :
 
+```
 twistd -n lisa-client
+```

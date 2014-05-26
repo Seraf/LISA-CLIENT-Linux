@@ -1,14 +1,15 @@
 # -*- coding: UTF-8 -*-
 
 # Imports
+from lisa.client.ConfigManager import ConfigManagerSingleton
 import threading
-import time, os
+import os
 from lisa.client.lib import player
 from Queue import Queue
 from time import sleep
 from subprocess import call
 import urllib
-from urllib import urlencode, urlopen, urlretrieve
+from urllib import urlencode, urlopen
 from random import randint
 from twisted.python import log
 
@@ -50,7 +51,7 @@ class Speaker(threading.Thread):
     # TTS engine enum
     _engines = type('Enum', (), dict({"pico": 1, "voicerss": 2}))
 
-    def __init__(self, configuration):
+    def __init__(self):
         if self.__instance is not None:
             raise Exception("Singleton can't be created twice !")
 
@@ -58,7 +59,8 @@ class Speaker(threading.Thread):
         threading.Thread.__init__(self)
         self._stopevent = threading.Event()
 
-        self.configuration = configuration
+        self.configuration = ConfigManagerSingleton.get().getConfiguration()
+
         self.queue = Queue([])
         self.lang = "en-EN"
         if self.configuration.has_key('lang'):
@@ -80,10 +82,10 @@ class Speaker(threading.Thread):
         # Start thread
         threading.Thread.start(self)
 
-    def _start(self, configuration):
+    def _start(self):
         # Create singleton
         if self.__instance is None:
-            self.__instance = Speaker(configuration)
+            self.__instance = Speaker()
 
     def _speak(self, msg, block = True):
         # Queue message

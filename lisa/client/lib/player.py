@@ -3,8 +3,6 @@
 # Imports
 import gst
 import os
-import time
-from time import sleep
 import gobject
 gobject.threads_init()
 
