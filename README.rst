@@ -1,9 +1,11 @@
-.. image:: https://badge.waffle.io/seraf/lisa-client-linux.png?label=ready&title=Ready 
- :target: https://waffle.io/seraf/lisa-client-linux
- :alt: 'Stories in Ready'
 State of the project :
 
 .. image:: https://travis-ci.org/Seraf/LISA-CLIENT-Linux.png
+ :target: https://travis-ci.org/Seraf/LISA-CLIENT-Linux
+ 
+.. image:: https://badge.waffle.io/seraf/lisa-client-linux.png?label=ready&title=Ready 
+ :target: https://waffle.io/seraf/lisa-client-linux
+ :alt: 'Stories in Ready'
 
 Overview
 ########
