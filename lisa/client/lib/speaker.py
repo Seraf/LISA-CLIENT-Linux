@@ -4,6 +4,7 @@
 from lisa.client.ConfigManager import ConfigManagerSingleton
 import threading
 import os
+import gettext
 from lisa.client.lib import player
 from Queue import Queue
 from time import sleep
@@ -16,27 +17,33 @@ from twisted.python import log
 soundfile = 'tts-output'
 soundpath = '/tmp/'
 
+configuration = ConfigManagerSingleton.get().getConfiguration()
+path = '/'.join([ConfigManagerSingleton.get().getPath(), 'lang'])
+_ = translation = gettext.translation(domain='lisa', localedir=path, fallback=True,
+                                              languages=[configuration['lang'].split('-')[0]]).ugettext
+
+
 # System utterance definition : key : {(weight1, message1), (weight2, message2)}
 # Speaker will randomly choose a message in list, balanced by weights
 _utterances = {
-    'yes':             {(5, "Oui"),
-                        (1, "Je vous écoute")
+    'yes':             {(5, _("Yes ?")),
+                        (1, _("I'm listening"))
                        },
-    'error_conf':      {(1, "Mon fichier de configuration est erronné"),
-                        (1, "J'ai détecté une erreur dans mon fichier de configuration")
+    'error_conf':      {(1, _("My configuration file is not readable")),
+                        (1, _("There's an error with my configuration file"))
                        },
-    'not_understood':  {(1, "Je n'ai pas compris votre question"),
-                        (1, "Je n'ai pas compris, pouvez vous répéter")
+    'not_understood':  {(1, _("I didn't understood your question")),
+                        (1, _("I didn't understood, can you repeat please ?"))
                        },
-    'ready':           {(3, "Je suis prêt"),
-                        (1, "Mon initialisation est terminée"),
-                        (1, "Je suis prêt à répondre à vos questions")
+    'ready':           {(3, _("I'm ready ok")),
+                        (1, _("Initialization completed")),
+                        (1, _("I'm ready to answer your questions"))
                        },
-    'no_server':       {(1, "Désolé je n'arrive pas a me connecter au serveur"),
-                        (1, "Le serveur est introuvable, veuillez vérifier la connexion")
+    'no_server':       {(1, _("Sorry, I can't connect to the server")),
+                        (1, _("I can't join the server, please check your connection"))
                        },
-    'lost_server':     {(1, "Il s'est produit une erreur, je ne suis plus disponible"),
-                        (1, "Ma connexion au serveur est interrompue, veuillez patienter")
+    'lost_server':     {(1, _("An error happened, I'm not available anymore")),
+                        (1, _("My connection was interrupted, please wait"))
                        }
     }
 
@@ -143,16 +150,20 @@ class Speaker(threading.Thread):
 
             # VoiceRSS
             elif self.engine == "voicerss":
-                url = urlopen("http://api.voicerss.org/?%s" % urlencode({"r": 1, "c": self.ext.upper(), "f": "16khz_16bit_mono", "key": self.voicerss_key, "src": data.encode('UTF-8'), "hl": self.lang}))
+                url = urlopen("http://api.voicerss.org/?%s" % urlencode({"r": 1, "c": self.ext.upper(),
+                                                                         "f": "16khz_16bit_mono",
+                                                                         "key": self.voicerss_key,
+                                                                         "src": data.encode('UTF-8'),
+                                                                         "hl": self.lang}))
                 with open(os.path.basename(filename), "wb") as f:
                     f.write(url.read())
 
             # Play synthetized file
             if os.path.exists(filename):
-                log.msg("Playing generated TTS")
+                log.msg(_("Playing generated TTS"))
                 player.play_block(sound = filename, path = soundpath, ext = self.ext)
             else:
-                print "There was an error creating the output file %s" % filename
+                print _("There was an error creating the output file %(filename)s" % {'filename': str(filename)})
 
             # Remove message from queue
             self.queue.task_done()
@@ -167,9 +178,9 @@ class Speaker(threading.Thread):
 
                 # If already generated
                 if os.path.isfile(filename):
-                    continue
+                    os.remove(filename)
 
-                print "Generating %s : '%s'" % (filename, msg[1])
+                print _("Generating %(filename)s : '%(message)s'" % {'filename': str(filename), 'message': msg[1]})
 
                 # VoiceRSS
                 if self.engine == "voicerss":
