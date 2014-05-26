@@ -20,7 +20,7 @@ To install it :
 pip install lisa-client
 ```
 
-To launch the client launch :
+To launch the client :
 
 ```
 twistd -n lisa-client
