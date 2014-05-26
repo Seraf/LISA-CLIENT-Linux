@@ -15,9 +15,12 @@ It sends the sentence to LISA Server.
 Clients can be multiple (one per room for example) if needed.
 
 To install it :
-
+```bash
 pip install lisa-client
+```
 
 To launch the client launch :
 
+```bash
 twistd -n lisa-client
+```
