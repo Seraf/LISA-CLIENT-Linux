@@ -102,7 +102,7 @@ class LisaClient(LineReceiver):
                     log.msg("setting botname to %s" % botname)
                     
                     # Send TTS
-                    Speaker.speak(datajson['body'])
+                    #Speaker.speak(datajson['body'])
                     
                     # Create listener
                     if datajson.has_key('nolistener') == False and not self.listener:
