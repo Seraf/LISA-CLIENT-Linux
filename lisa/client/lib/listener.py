@@ -58,7 +58,7 @@ class Listener(threading.Thread):
                                         + '            ! appsink name=rec_sink emit-signals=true '
                                         + ' audio_tee. ! queue '
                                         + '            ! audioconvert ! audioresample '
-                                        + '            ! vader name=vad_asr '
+                                        + '            ! vader name=vad_asr auto-threshold=true'
                                         + '            ! tee name=asr_tee '
                                         + '             asr_tee. ! fakesink async=false name=asr_sink'
                                         + '             asr_tee. ! pocketsphinx name=asr '

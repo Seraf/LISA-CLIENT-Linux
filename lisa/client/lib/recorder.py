@@ -22,6 +22,9 @@ class Recorder(threading.Thread):
         self.capture_buffers = deque([])
         self.running_state = False
         self.wit = Wit(self.configuration['wit_token'])
+        self.wit_confidence = 0.5
+        if self.configuration.has_key('confidence'):
+            self.wit_confidence = self.configuration['wit_confidence']
         self.record_time_start = 0
         self.record_time_end = 0
 
@@ -85,49 +88,51 @@ class Recorder(threading.Thread):
                 sleep(.1)
                 continue
 
-            # Activate capture, wait for 3s of silence before cancelling
+            # Activate capture, wait for 2s of silence before cancelling
+            wit_e = None
             self.record_time_start = 0
-            self.record_time_end = time.time() + 3
+            self.record_time_end = time.time() + 2
             self.capture_buffers.clear()
             result = ""
-            print "\n"
+            print '\n [Recording]' + ' ' * 20 + '[Recording]'
 
             # Send captured voice to wit
             try:
                 result = self.wit.post_speech(data = self._read_audio_buffer(), content_type=CONTENT_TYPE)
-            except:
-                # On error
-                if self.running_state == True:
-                    log.err("Wit exception")
-
-                # No retry when no sound recorded
-                if self.record_time_start == 0:
-                    retry = 0
+            except Exception as e:
+                wit_e = e
 
             # If record was stopped during recording
             if self.running_state == True:
-                # If Wit returned an error
-                if len(result) == 0:
-                    if retry != 0:
-                        Speaker.speak('not_understood')
+                # If Wit did not succeeded
+                if len(result) == 0 or result.has_key('outcome') == False or result['outcome'].has_key('confidence') == False or result['outcome']['confidence'] < self.wit_confidence:
+                    if wit_e is not None:
+                        log.err("Wit exception : " + str(e))
 
-                # Send recognized text to the server
+                    # If retry is available and vader detected an utterance
+                    if self.record_time_start != 0 and retry > 0:
+                        Speaker.speak('please_repeat')
+
+                        # Decrement retries
+                        retry = retry - 1
+                        continue
+
+                    # No more retry
+                    Speaker.speak('not_understood')
+
+                # Send recognized intent to the server
                 else:
                     self.lisa_client.sendMessage(message=result['msg_body'], type='chat', dict=result['outcome'])
-                    retry = 0
 
-            # If no more retry
-            if retry == 0:
-                # Reset state
-                self.running_state = False
-                retry = 1
+            # Reset running state
+            self.running_state = False
+            retry = 1
 
-                # Reconnect pocketsphinx to pipeline
-                self.asr_tee.link(self.asr)
-                self.asr_tee.unlink(self.asr_sink)
-            else:
-                # Decrement retries
-                retry = retry - 1
+            # Reconnect pocketsphinx to pipeline
+            print ""
+            print "> Ready Recognize Voice"
+            self.asr_tee.link(self.asr)
+            self.asr_tee.unlink(self.asr_sink)
 
     def _vader_start(self, ob, message):
         """
@@ -157,10 +162,6 @@ class Recorder(threading.Thread):
 
         # If recording is running
         if self.running_state == True:
-            if self.record_time_start == 0:
-                # Start was not called by vader
-                self._vader_start(ob = None, message = None)
-
             # Add buffer to queue
             self.capture_buffers.append(Buffer)
 
@@ -189,5 +190,3 @@ class Recorder(threading.Thread):
                 last_progress = progress
                 print '\x1b[1A',
                 print '[Recording]' + '.' * progress + ' ' * (20 - progress) + '[Recording]'
-
-        print "> Ready Recognize Voice\n"
