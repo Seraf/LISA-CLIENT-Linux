@@ -54,6 +54,15 @@ class LisaClient(LineReceiver):
         if self.configuration.has_key("zone"):
             self.zone = self.configuration['zone']
 
+        # Init speaker singleton
+        Speaker.start()
+
+        # Check vital configuration
+        if self.configuration.has_key('lisa_url') == False or self.configuration.has_key('lisa_engine_port_ssl') == False:
+            Speaker.speak("error_conf")
+            return
+
+
     def sendMessage(self, message, type='chat', dict=None):
         if dict:
             line = json.dumps(
@@ -105,7 +114,7 @@ class LisaClient(LineReceiver):
                     if datajson.has_key('nolistener') == False:
                         # Send TTS
                         Speaker.speak(datajson['body'])
-                    
+
                     # Create listener
                     if datajson.has_key('nolistener') == False and not self.listener:
                         self.listener = Listener(lisa_client = self, botname = botname)
@@ -116,7 +125,7 @@ class LisaClient(LineReceiver):
                 # TODO For the soundqueue, I will need a callback system to be sure to play the audio before recording
                 elif datajson['command'] == 'ASK':
                     Speaker.speak(datajson['body'])
-                    
+
                     # Start record
                     if datajson.has_key('nolistener') == False and self.listener:
                         self.listener.record()
@@ -166,7 +175,7 @@ class LisaClientFactory(ReconnectingClientFactory):
     def buildProtocol(self, addr):
         # Reset retry delay
         self.resetDelay()
-        
+
         # We don't need a "no connection" warning anymore
         self.first_time = False
 
@@ -184,7 +193,7 @@ class LisaClientFactory(ReconnectingClientFactory):
         if self.first_time == True:
             Speaker.speak("no_server")
             self.first_time = False
-            
+
         # Retry
         self.resetDelay()
         log.err('Connection failed. Reason:', reason.getErrorMessage())
@@ -213,36 +222,28 @@ application = service.Application("LISA-Client")
 def sigint_handler(signum, frame):
     global LisaFactory
     global sound_service
-    
+
     # Unregister handler, next Ctrl-C will kill app
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Stop factory
     LisaFactory.stopTrying()
-    
+
     # Stop reactor
     reactor.stop()
-    
+
     # Stop speaker
     Speaker.stop()
-    
+
 # Make twisted service
 def makeService(config):
     global LisaFactory
-    
+
+    # Get configuration
     if config['configuration']:
         ConfigManagerSingleton.get().setConfiguration(config['configuration'])
-
     configuration = ConfigManagerSingleton.get().getConfiguration()
 
-    # Init speaker singleton
-    Speaker.start()
-
-    # Check vial configuration
-    if configuration.has_key('lisa_url') == False or configuration.has_key('lisa_engine_port_ssl') == False:
-        Speaker.speak("error_conf")
-        return
-    
     # Multiservice mode
     multi = service.MultiService()
     multi.setServiceParent(application)
