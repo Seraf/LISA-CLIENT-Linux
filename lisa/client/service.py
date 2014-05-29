@@ -3,9 +3,19 @@
 # Imports
 from twisted.python import log
 import signal
-from lisa.client import lib
-from lib import Listener
-from lib import Speaker
+gobjectnotimported = False
+try:
+    from dbus.mainloop.glib import DBusGMainLoop
+    DBusGMainLoop(set_as_default=True)
+    import gobject
+    import pygst
+    pygst.require('0.10')
+    gobject.threads_init()
+    from lisa.client import lib
+    from lib import Listener
+    from lib import Speaker
+except:
+    gbjectnotimported = True
 from twisted.internet import ssl, utils
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet.defer import inlineCallbacks, DeferredQueue
@@ -44,6 +54,8 @@ class LisaClient(LineReceiver):
             self.zone = self.configuration['zone']
 
         # Init speaker singleton
+        if gbjectnotimported == True:
+            from lib import Speaker
         Speaker.start()
 
         # Check vital configuration
