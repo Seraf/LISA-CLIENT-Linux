@@ -164,7 +164,7 @@ class Speaker(threading.Thread):
 
             # Play synthetized file
             if os.path.exists(filename):
-                log.msg(_("Playing generated TTS"))
+                log.msg(_("Playing generated TTS").encode('utf8'))
                 player.play_block(sound = filename, path = soundpath, ext = self.ext)
             else:
                 log.msg(_("There was an error creating the output file %(filename)s" % {'filename': str(filename)}).encode('utf8'))
