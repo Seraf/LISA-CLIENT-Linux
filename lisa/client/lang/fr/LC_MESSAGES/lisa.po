@@ -18,6 +18,7 @@ msgstr ""
 "Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
+
 #: ../lib/speaker.py:29
 msgid "Yes ?"
 msgstr "Oui ?"
@@ -39,11 +40,23 @@ msgid "I didn't understood your question"
 msgstr "Je n'ai pas compris votre question"
 
 #: ../lib/speaker.py:36
-msgid "I didn't understood, can you repeat please ?"
-msgstr "Je n'ai pas compris, pouvez vous répéter"
+msgid "I can't hear you clearly"
+msgstr "Je ne vous entends pas correctement"
 
-#: ../lib/speaker.py:38
-msgid "I'm ready"
+#: ../lib/speaker.py:37
+msgid "I didn't understood"
+msgstr "Je n'ai pas compris"
+
+#: ../lib/speaker.py:39
+msgid "Can you repeat please ?"
+msgstr "Pouvez vous répéter ?"
+
+#: ../lib/speaker.py:40
+msgid "I didn't understood, can you repeat please ?"
+msgstr "Je n'ai pas compris, pouvez vous répéter ?"
+
+#: ../lib/speaker.py:42
+msgid "I'm ready ok"
 msgstr "Je suis prêt"
 
 #: ../lib/speaker.py:39

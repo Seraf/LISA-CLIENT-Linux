@@ -33,6 +33,10 @@ _utterances = {
                         (1, _("There's an error with my configuration file"))
                        },
     'not_understood':  {(1, _("I didn't understood your question")),
+                        (1, _("I can't hear you clearly")),
+                        (1, _("I didn't understood"))
+                       },
+    'please_repeat':   {(1, _("Can you repeat please ?")),
                         (1, _("I didn't understood, can you repeat please ?"))
                        },
     'ready':           {(3, _("I'm ready ok")),
