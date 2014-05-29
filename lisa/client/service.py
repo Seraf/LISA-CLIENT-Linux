@@ -3,19 +3,9 @@
 # Imports
 from twisted.python import log
 import signal
-gobjectnotimported = False
-try:
-    from dbus.mainloop.glib import DBusGMainLoop
-    DBusGMainLoop(set_as_default=True)
-    import gobject
-    import pygst
-    pygst.require('0.10')
-    gobject.threads_init()
-    from lisa.client import lib
-    from lib import Listener
-    from lib import Speaker
-except:
-    gobjectnotimported = True
+from lisa.client import lib
+from lib import Listener
+from lib import Speaker
 from twisted.internet import ssl, utils
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet.defer import inlineCallbacks, DeferredQueue
@@ -30,7 +20,6 @@ import platform
 
 # Globals
 PWD = os.path.dirname(os.path.abspath(__file__))
-sound_queue = DeferredQueue()
 configuration = None
 LisaFactory = None
 
@@ -221,7 +210,6 @@ application = service.Application("LISA-Client")
 # Handle Ctrl-C
 def sigint_handler(signum, frame):
     global LisaFactory
-    global sound_service
 
     # Unregister handler, next Ctrl-C will kill app
     signal.signal(signal.SIGINT, signal.SIG_DFL)
