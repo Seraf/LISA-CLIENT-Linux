@@ -15,7 +15,7 @@ try:
     from lib import Listener
     from lib import Speaker
 except:
-    gbjectnotimported = True
+    gobjectnotimported = True
 from twisted.internet import ssl, utils
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet.defer import inlineCallbacks, DeferredQueue
@@ -52,16 +52,6 @@ class LisaClient(LineReceiver):
         self.zone = ""
         if self.configuration.has_key("zone"):
             self.zone = self.configuration['zone']
-
-        # Init speaker singleton
-        if gbjectnotimported == True:
-            from lib import Speaker
-        Speaker.start()
-
-        # Check vital configuration
-        if self.configuration.has_key('lisa_url') == False or self.configuration.has_key('lisa_engine_port_ssl') == False:
-            Speaker.speak("error_conf")
-            return
 
 
     def sendMessage(self, message, type='chat', dict=None):
@@ -103,7 +93,8 @@ class LisaClient(LineReceiver):
 
         if datajson.has_key("type"):
             if datajson['type'] == 'chat':
-                Speaker.speak(datajson['body'])
+                if datajson.has_key('nolistener') == False:
+                    Speaker.speak(datajson['body'])
 
             elif datajson['type'] == 'command':
                 if datajson['command'] == 'LOGIN':
@@ -112,8 +103,9 @@ class LisaClient(LineReceiver):
                     log.msg("setting botname to %s" % botname)
                     self.botname = botname
 
+                    # Send TTS
                     if datajson.has_key('nolistener') == False:
-                        # Send TTS
+                        Speaker.start()
                         Speaker.speak(datajson['body'])
 
                     # Create listener
@@ -125,7 +117,8 @@ class LisaClient(LineReceiver):
                 # TODO let possible the multi user / multi client. Questions need to implement a lifetime too.
                 # TODO For the soundqueue, I will need a callback system to be sure to play the audio before recording
                 elif datajson['command'] == 'ASK':
-                    Speaker.speak(datajson['body'])
+                    if datajson.has_key('nolistener') == False:
+                        Speaker.speak(datajson['body'])
 
                     # Start record
                     if datajson.has_key('nolistener') == False and self.listener:
@@ -133,7 +126,8 @@ class LisaClient(LineReceiver):
 
         else:
             # Send to TTS queue
-            Speaker.speak(datajson['body'])
+            if datajson.has_key('nolistener') == False:
+                Speaker.speak(datajson['body'])
 
     def connectionMade(self):
         """
@@ -243,6 +237,12 @@ def makeService(config):
     if config['configuration']:
         ConfigManagerSingleton.get().setConfiguration(config['configuration'])
     configuration = ConfigManagerSingleton.get().getConfiguration()
+
+    # Check vital configuration
+    if configuration.has_key('lisa_url') == False or configuration.has_key('lisa_engine_port_ssl') == False:
+        Speaker.start()
+        Speaker.speak("error_conf")
+        return
 
     # Multiservice mode
     multi = service.MultiService()
