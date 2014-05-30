@@ -30,7 +30,6 @@ import platform
 
 # Globals
 PWD = os.path.dirname(os.path.abspath(__file__))
-sound_queue = DeferredQueue()
 configuration = None
 LisaFactory = None
 
@@ -53,6 +52,7 @@ class LisaClient(LineReceiver):
         self.zone = ""
         if self.configuration.has_key("zone"):
             self.zone = self.configuration['zone']
+
 
     def sendMessage(self, message, type='chat', dict=None):
         if dict:
@@ -93,7 +93,8 @@ class LisaClient(LineReceiver):
 
         if datajson.has_key("type"):
             if datajson['type'] == 'chat':
-                Speaker.speak(datajson['body'])
+                if datajson.has_key('nolistener') == False:
+                    Speaker.speak(datajson['body'])
 
             elif datajson['type'] == 'command':
                 if datajson['command'] == 'LOGIN':
@@ -102,10 +103,11 @@ class LisaClient(LineReceiver):
                     log.msg("setting botname to %s" % botname)
                     self.botname = botname
 
+                    # Send TTS
                     if datajson.has_key('nolistener') == False:
-                        # Send TTS
+                        Speaker.start()
                         Speaker.speak(datajson['body'])
-                    
+
                     # Create listener
                     if datajson.has_key('nolistener') == False and not self.listener:
                         self.listener = Listener(lisa_client = self, botname = botname)
@@ -115,15 +117,17 @@ class LisaClient(LineReceiver):
                 # TODO let possible the multi user / multi client. Questions need to implement a lifetime too.
                 # TODO For the soundqueue, I will need a callback system to be sure to play the audio before recording
                 elif datajson['command'] == 'ASK':
-                    Speaker.speak(datajson['body'])
-                    
+                    if datajson.has_key('nolistener') == False:
+                        Speaker.speak(datajson['body'])
+
                     # Start record
                     if datajson.has_key('nolistener') == False and self.listener:
                         self.listener.record()
 
         else:
             # Send to TTS queue
-            Speaker.speak(datajson['body'])
+            if datajson.has_key('nolistener') == False:
+                Speaker.speak(datajson['body'])
 
     def connectionMade(self):
         """
@@ -166,7 +170,7 @@ class LisaClientFactory(ReconnectingClientFactory):
     def buildProtocol(self, addr):
         # Reset retry delay
         self.resetDelay()
-        
+
         # We don't need a "no connection" warning anymore
         self.first_time = False
 
@@ -184,7 +188,7 @@ class LisaClientFactory(ReconnectingClientFactory):
         if self.first_time == True:
             Speaker.speak("no_server")
             self.first_time = False
-            
+
         # Retry
         self.resetDelay()
         log.err('Connection failed. Reason:', reason.getErrorMessage())
@@ -212,37 +216,34 @@ application = service.Application("LISA-Client")
 # Handle Ctrl-C
 def sigint_handler(signum, frame):
     global LisaFactory
-    global sound_service
-    
+
     # Unregister handler, next Ctrl-C will kill app
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Stop factory
     LisaFactory.stopTrying()
-    
+
     # Stop reactor
     reactor.stop()
-    
+
     # Stop speaker
     Speaker.stop()
-    
+
 # Make twisted service
 def makeService(config):
     global LisaFactory
-    
+
+    # Get configuration
     if config['configuration']:
         ConfigManagerSingleton.get().setConfiguration(config['configuration'])
-
     configuration = ConfigManagerSingleton.get().getConfiguration()
 
-    # Init speaker singleton
-    Speaker.start()
-
-    # Check vial configuration
+    # Check vital configuration
     if configuration.has_key('lisa_url') == False or configuration.has_key('lisa_engine_port_ssl') == False:
+        Speaker.start()
         Speaker.speak("error_conf")
         return
-    
+
     # Multiservice mode
     multi = service.MultiService()
     multi.setServiceParent(application)

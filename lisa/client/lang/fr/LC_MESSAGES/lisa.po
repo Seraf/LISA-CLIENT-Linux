@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: LISA-CLIENT-LINUX\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2014-05-23 17:11+0200\n"
-"PO-Revision-Date: 2014-05-23 16:10+0000\n"
+"PO-Revision-Date: 2014-05-26 06:10+0000\n"
 "Last-Translator: Seraf42 <nephilim.seraphin@gmail.com>\n"
 "Language-Team: French (http://www.transifex.com/projects/p/lisa-client-linux/language/fr/)\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-
 
 #: ../lib/speaker.py:29
 msgid "Yes ?"
@@ -40,23 +39,11 @@ msgid "I didn't understood your question"
 msgstr "Je n'ai pas compris votre question"
 
 #: ../lib/speaker.py:36
-msgid "I can't hear you clearly"
-msgstr "Je ne vous entends pas correctement"
-
-#: ../lib/speaker.py:37
-msgid "I didn't understood"
-msgstr "Je n'ai pas compris"
-
-#: ../lib/speaker.py:39
-msgid "Can you repeat please ?"
-msgstr "Pouvez vous répéter ?"
-
-#: ../lib/speaker.py:40
 msgid "I didn't understood, can you repeat please ?"
-msgstr "Je n'ai pas compris, pouvez vous répéter ?"
+msgstr "Je n'ai pas compris, pouvez vous répéter"
 
-#: ../lib/speaker.py:42
-msgid "I'm ready ok"
+#: ../lib/speaker.py:38
+msgid "I'm ready"
 msgstr "Je suis prêt"
 
 #: ../lib/speaker.py:39
@@ -85,14 +72,14 @@ msgstr "Ma connexion au serveur est interrompue, veuillez patienter"
 
 #: ../lib/speaker.py:159
 msgid "Playing generated TTS"
-msgstr ""
+msgstr "Lecture du son généré"
 
 #: ../lib/speaker.py:162
 #, python-format
 msgid "There was an error creating the output file %(filename)s"
-msgstr ""
+msgstr "Il y a eu une lors de la création du fichier %(filename)s"
 
 #: ../lib/speaker.py:179
 #, python-format
 msgid "Generating %(filename)s : '%(message)s'"
-msgstr ""
+msgstr "Création du fichier %(filename)s : '%(message)s'"

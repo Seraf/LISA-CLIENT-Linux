@@ -164,10 +164,10 @@ class Speaker(threading.Thread):
 
             # Play synthetized file
             if os.path.exists(filename):
-                log.msg(_("Playing generated TTS"))
+                log.msg(_("Playing generated TTS").encode('utf8'))
                 player.play_block(sound = filename, path = soundpath, ext = self.ext)
             else:
-                print _("There was an error creating the output file %(filename)s" % {'filename': str(filename)})
+                log.msg(_("There was an error creating the output file %(filename)s" % {'filename': str(filename)}).encode('utf8'))
 
             # Remove message from queue
             self.queue.task_done()
@@ -184,7 +184,7 @@ class Speaker(threading.Thread):
                 if os.path.isfile(filename):
                     os.remove(filename)
 
-                print _("Generating %(filename)s : '%(message)s'" % {'filename': str(filename), 'message': msg[1]})
+                log.msg(_("Generating %(filename)s : '%(message)s'" % {'filename': str(filename), 'message': msg[1]}).encode('utf8'))
 
                 # VoiceRSS
                 if self.engine == "voicerss":
