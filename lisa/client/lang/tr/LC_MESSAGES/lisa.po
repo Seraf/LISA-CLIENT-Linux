@@ -3,84 +3,82 @@
 # This file is distributed under the same license as the PACKAGE package.
 # 
 # Translators:
-# Gilles Dumée <gilles.dumee@free.fr>, 2014
-# Julien Syx <nephilim.seraphin@gmail.com>, 2014
 msgid ""
 msgstr ""
 "Project-Id-Version: LISA-CLIENT-LINUX\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2014-05-23 17:11+0200\n"
-"PO-Revision-Date: 2014-05-29 20:28+0000\n"
-"Last-Translator: Gilles Dumée <gilles.dumee@free.fr>\n"
-"Language-Team: French (http://www.transifex.com/projects/p/lisa-client-linux/language/fr/)\n"
+"PO-Revision-Date: 2014-05-23 16:07+0000\n"
+"Last-Translator: Julien SYX <julien.syx@gmail.com>\n"
+"Language-Team: Turkish (http://www.transifex.com/projects/p/lisa-client-linux/language/tr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: fr\n"
+"Language: tr\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: ../lib/speaker.py:29
 msgid "Yes ?"
-msgstr "Oui ?"
+msgstr ""
 
 #: ../lib/speaker.py:30
 msgid "I'm listening"
-msgstr "Je vous écoute"
+msgstr ""
 
 #: ../lib/speaker.py:32
 msgid "My configuration file is not readable"
-msgstr "Mon fichier de configuration est erronné"
+msgstr ""
 
 #: ../lib/speaker.py:33
 msgid "There's an error with my configuration file"
-msgstr "J'ai détecté une erreur dans mon fichier de configuration"
+msgstr ""
 
 #: ../lib/speaker.py:35
 msgid "I didn't understood your question"
-msgstr "Je n'ai pas compris votre question"
+msgstr ""
 
 #: ../lib/speaker.py:36
 msgid "I didn't understood, can you repeat please ?"
-msgstr "Je n'ai pas compris, pouvez vous répéter ?"
+msgstr ""
 
 #: ../lib/speaker.py:38
 msgid "I'm ready"
-msgstr "Je suis prêt"
+msgstr ""
 
 #: ../lib/speaker.py:39
 msgid "Initialization completed"
-msgstr "Mon initialisation est terminée"
+msgstr ""
 
 #: ../lib/speaker.py:40
 msgid "I'm ready to answer your questions"
-msgstr "Je suis prêt à répondre à vos questions"
+msgstr ""
 
 #: ../lib/speaker.py:42
 msgid "Sorry, I can't connect to the server"
-msgstr "Désolé je n'arrive pas a me connecter au serveur"
+msgstr ""
 
 #: ../lib/speaker.py:43
 msgid "I can't join the server, please check your connection"
-msgstr "Le serveur est introuvable, veuillez vérifier la connexion"
+msgstr ""
 
 #: ../lib/speaker.py:45
 msgid "An error happened, I'm not available anymore"
-msgstr "Il s'est produit une erreur, je ne suis plus disponible"
+msgstr ""
 
 #: ../lib/speaker.py:46
 msgid "My connection was interrupted, please wait"
-msgstr "Ma connexion au serveur est interrompue, veuillez patienter"
+msgstr ""
 
 #: ../lib/speaker.py:159
 msgid "Playing generated TTS"
-msgstr "Lecture du son généré"
+msgstr ""
 
 #: ../lib/speaker.py:162
 #, python-format
 msgid "There was an error creating the output file %(filename)s"
-msgstr "Il y a eu une lors de la création du fichier %(filename)s"
+msgstr ""
 
 #: ../lib/speaker.py:179
 #, python-format
 msgid "Generating %(filename)s : '%(message)s'"
-msgstr "Création du fichier %(filename)s : '%(message)s'"
+msgstr ""

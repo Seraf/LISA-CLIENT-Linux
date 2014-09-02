@@ -1,4 +1,4 @@
 include requirements.txt
-recursive-include lisa *.lm *.dic *.json *.sample *.wav *.rst *.py
+recursive-include lisa *.lm *.dic *.json *.sample *.wav *.rst *.py *.mo *.po *.pot *.sh
 graft twisted
 prune *.pyc
