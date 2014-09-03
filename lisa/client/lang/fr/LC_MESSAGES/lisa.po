@@ -9,9 +9,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: LISA-CLIENT-LINUX\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2014-05-23 17:11+0200\n"
-"PO-Revision-Date: 2014-05-29 20:28+0000\n"
-"Last-Translator: Gilles Dumée <gilles.dumee@free.fr>\n"
+"POT-Creation-Date: 2014-09-03 09:12+0200\n"
+"PO-Revision-Date: 2014-09-03 07:13+0000\n"
+"Last-Translator: Julien Syx <nephilim.seraphin@gmail.com>\n"
 "Language-Team: French (http://www.transifex.com/projects/p/lisa-client-linux/language/fr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -40,47 +40,59 @@ msgid "I didn't understood your question"
 msgstr "Je n'ai pas compris votre question"
 
 #: ../lib/speaker.py:36
+msgid "I can't hear you clearly"
+msgstr "Je ne vous entends pas bien"
+
+#: ../lib/speaker.py:37
+msgid "I didn't understood"
+msgstr "Je n'ai pas compris"
+
+#: ../lib/speaker.py:39
+msgid "Can you repeat please ?"
+msgstr "Pouvez vous répeter s'il vous plait ?"
+
+#: ../lib/speaker.py:40
 msgid "I didn't understood, can you repeat please ?"
 msgstr "Je n'ai pas compris, pouvez vous répéter ?"
 
-#: ../lib/speaker.py:38
-msgid "I'm ready"
+#: ../lib/speaker.py:42
+msgid "I'm ready ok"
 msgstr "Je suis prêt"
 
-#: ../lib/speaker.py:39
+#: ../lib/speaker.py:43
 msgid "Initialization completed"
 msgstr "Mon initialisation est terminée"
 
-#: ../lib/speaker.py:40
+#: ../lib/speaker.py:44
 msgid "I'm ready to answer your questions"
 msgstr "Je suis prêt à répondre à vos questions"
 
-#: ../lib/speaker.py:42
+#: ../lib/speaker.py:46
 msgid "Sorry, I can't connect to the server"
 msgstr "Désolé je n'arrive pas a me connecter au serveur"
 
-#: ../lib/speaker.py:43
+#: ../lib/speaker.py:47
 msgid "I can't join the server, please check your connection"
 msgstr "Le serveur est introuvable, veuillez vérifier la connexion"
 
-#: ../lib/speaker.py:45
+#: ../lib/speaker.py:49
 msgid "An error happened, I'm not available anymore"
 msgstr "Il s'est produit une erreur, je ne suis plus disponible"
 
-#: ../lib/speaker.py:46
+#: ../lib/speaker.py:50
 msgid "My connection was interrupted, please wait"
 msgstr "Ma connexion au serveur est interrompue, veuillez patienter"
 
-#: ../lib/speaker.py:159
+#: ../lib/speaker.py:167
 msgid "Playing generated TTS"
 msgstr "Lecture du son généré"
 
-#: ../lib/speaker.py:162
+#: ../lib/speaker.py:170
 #, python-format
 msgid "There was an error creating the output file %(filename)s"
 msgstr "Il y a eu une lors de la création du fichier %(filename)s"
 
-#: ../lib/speaker.py:179
+#: ../lib/speaker.py:187
 #, python-format
 msgid "Generating %(filename)s : '%(message)s'"
 msgstr "Création du fichier %(filename)s : '%(message)s'"

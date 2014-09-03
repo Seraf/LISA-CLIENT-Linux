@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: LISA-CLIENT-LINUX\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2014-05-23 17:11+0200\n"
-"PO-Revision-Date: 2014-05-23 16:07+0000\n"
-"Last-Translator: Julien SYX <julien.syx@gmail.com>\n"
+"POT-Creation-Date: 2014-09-03 09:12+0200\n"
+"PO-Revision-Date: 2014-09-03 07:12+0000\n"
+"Last-Translator: Julien Syx <nephilim.seraphin@gmail.com>\n"
 "Language-Team: Turkish (http://www.transifex.com/projects/p/lisa-client-linux/language/tr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -38,47 +38,59 @@ msgid "I didn't understood your question"
 msgstr ""
 
 #: ../lib/speaker.py:36
-msgid "I didn't understood, can you repeat please ?"
+msgid "I can't hear you clearly"
 msgstr ""
 
-#: ../lib/speaker.py:38
-msgid "I'm ready"
+#: ../lib/speaker.py:37
+msgid "I didn't understood"
 msgstr ""
 
 #: ../lib/speaker.py:39
-msgid "Initialization completed"
+msgid "Can you repeat please ?"
 msgstr ""
 
 #: ../lib/speaker.py:40
-msgid "I'm ready to answer your questions"
+msgid "I didn't understood, can you repeat please ?"
 msgstr ""
 
 #: ../lib/speaker.py:42
-msgid "Sorry, I can't connect to the server"
+msgid "I'm ready ok"
 msgstr ""
 
 #: ../lib/speaker.py:43
-msgid "I can't join the server, please check your connection"
+msgid "Initialization completed"
 msgstr ""
 
-#: ../lib/speaker.py:45
-msgid "An error happened, I'm not available anymore"
+#: ../lib/speaker.py:44
+msgid "I'm ready to answer your questions"
 msgstr ""
 
 #: ../lib/speaker.py:46
+msgid "Sorry, I can't connect to the server"
+msgstr ""
+
+#: ../lib/speaker.py:47
+msgid "I can't join the server, please check your connection"
+msgstr ""
+
+#: ../lib/speaker.py:49
+msgid "An error happened, I'm not available anymore"
+msgstr ""
+
+#: ../lib/speaker.py:50
 msgid "My connection was interrupted, please wait"
 msgstr ""
 
-#: ../lib/speaker.py:159
+#: ../lib/speaker.py:167
 msgid "Playing generated TTS"
 msgstr ""
 
-#: ../lib/speaker.py:162
+#: ../lib/speaker.py:170
 #, python-format
 msgid "There was an error creating the output file %(filename)s"
 msgstr ""
 
-#: ../lib/speaker.py:179
+#: ../lib/speaker.py:187
 #, python-format
 msgid "Generating %(filename)s : '%(message)s'"
 msgstr ""
