@@ -7,7 +7,7 @@ import os
 # if it use a newer version. So let's upgrade it programmatically
 #pip.main(['install', '-r', 'requirements.txt'])
 
-VERSION = '0.1.3.1'
+VERSION = '0.1.3.2'
 
 # When pip installs anything from packages, py_modules, or ext_modules that
 # includes a twistd plugin (which are installed to twisted/plugins/),
